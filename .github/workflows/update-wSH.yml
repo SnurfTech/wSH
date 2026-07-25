@@ -61,6 +61,12 @@ jobs:
         sudo cp -a rootfs/. /tmp/hda-mount/
         sudo umount /tmp/hda-mount
         rmdir /tmp/hda-mount
+        mkdir initramfs
+        cd initramfs
+        zcat ../initramfs-virt | sudo cpio -idmv
+        rm ../initramfs-virt
+        sed -i 's|$MOCK mount -t tmpfs -o "$rootflags" tmpfs "$sysroot"|mkdir -p "$sysroot"; $MOCK mount -t ext4 /dev/hda "$sysroot"|g' init
+        find . -print0 | sudo cpio --null -create --format=newc | gzip -9 > ../initramfs-virt
 
     - name: Create bundled.html
       run: |
