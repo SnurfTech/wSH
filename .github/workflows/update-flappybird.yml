@@ -23,12 +23,26 @@ jobs:
         wget https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js
         wget https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css
         wget https://dl-cdn.alpinelinux.org/alpine/v3.24/releases/x86/alpine-virt-3.24.1-x86.iso -O alpine.iso
-        wget https://github.com/copy/v86/raw/refs/heads/master/bios/seabios.bin
         wget https://github.com/copy/v86/raw/refs/heads/master/bios/vgabios.bin
         sudo apt install p7zip -y
         7z x alpine.iso
         mv boot/vmlinuz-virt .
         mv boot/initramfs-virt .
+        git clone https://github.com/qemu/seabios
+        cd seabios
+        make defconfig
+        cat << EOF >> .config
+        # Option A: Debug Logging Configuration
+        CONFIG_DEBUG_LEVEL=8
+        CONFIG_DEBUG_SERIAL=y
+        CONFIG_DEBUG_SERIAL_PORT=0x3f8
+
+        # Option B: Interactive Serial Console (Sercon)
+        CONFIG_SERCON=y
+        EOF
+        make olddefconfig
+        make -j$(nproc)
+        mv out/bios.bin ../seabios.bin
 
     - name: Create bundled.html
       run: |
