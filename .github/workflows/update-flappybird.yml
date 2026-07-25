@@ -118,7 +118,7 @@ jobs:
         const emulator = new V86({
             wasm_path: "v86.wasm",
 
-            memory_size: 256 * 1024 * 1024,
+            memory_size: 128 * 1024 * 1024,
             vga_memory_size: 8 * 1024 * 1024,
 
             // Hidden
