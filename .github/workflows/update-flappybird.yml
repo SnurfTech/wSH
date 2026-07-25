@@ -23,6 +23,8 @@ jobs:
         wget https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js
         wget https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css
         wget https://dl-cdn.alpinelinux.org/alpine/v3.24/releases/x86/alpine-virt-3.24.1-x86.iso -O alpine.iso
+        wget https://github.com/copy/v86/raw/refs/heads/master/bios/seabios.bin
+        wget https://github.com/copy/v86/raw/refs/heads/master/bios/vgabios.bin
 
     - name: Create bundled.html
       run: |
