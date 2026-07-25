@@ -43,6 +43,24 @@ jobs:
         make olddefconfig
         make -j$(nproc)
         mv out/bios.bin ../seabios.bin
+        cd ..
+        mkdir rootfs
+        wget https://dl-cdn.alpinelinux.org/alpine/v3.24/releases/x86/alpine-minirootfs-3.24.1-x86.tar.gz -O alpine.tar.gz
+        tar -xzvf alpine.tar.gz -C rootfs
+        cat << "EOF" > rootfs/etc/fstab
+        /dev/hda / ext4 defaults 1 1
+        EOF
+        cat << "EOF" >> rootfs/etc/inittab
+        ttyS0::respawn:/sbin/getty -L 115200 ttyS0 vt100
+        EOF
+        sed -i 's|^root.*|root::14847:0:99999:7:::|g' rootfs/etc/shadow
+        dd if=/dev/zero of=alpine.img bs=1M count=1024
+        mkfs.ext4 alpine.img
+        mkdir /tmp/hda-mount
+        sudo mount -o loop alpine.img /tmp/hda-mount
+        sudo cp -a rootfs/. /tmp/hda-mount/
+        sudo umount /tmp/hda-mount
+        rmdir /tmp/hda-mount
 
     - name: Create bundled.html
       run: |
@@ -216,8 +234,8 @@ jobs:
                 url: "initramfs-virt"
             },
 
-            cdrom: {
-                url: "alpine.iso"
+            hda: {
+                url: "alpine.img"
             },
 
             cmdline:
@@ -407,7 +425,7 @@ jobs:
 
             "./vmlinuz-virt",
             "./initramfs-virt",
-            "./alpine.iso",
+            "./alpine.img",
 
             "./xterm.js",
             "./xterm.css",
