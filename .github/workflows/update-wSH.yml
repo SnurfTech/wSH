@@ -149,6 +149,11 @@ jobs:
                 "earlyprintk=serial,ttyS0,115200 " +
                 "loglevel=7",
 
+            net_device: {
+                type: "ne2k",
+                relay_url: "wss://relay.widgetry.org/"
+            },
+
             autostart: true
         });
 
