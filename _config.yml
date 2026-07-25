@@ -40,7 +40,7 @@ features                                  :
 
   - title                                 : Full Alpine Linux
     description                           : A full version of Alpine Linux right in an iOS app!
-    fontawesome_icon_name                 : linux
+    fontawesome_icon_name                 : code
     
   - title                                 : Not on the App Store
     description                           : "This app is installed via a mobileconfig. Apple can't remove this app from the App Store if it isn't even there!"
