@@ -30,113 +30,180 @@ jobs:
       run: |
         cd wSH
         cat << EOF > bundled.html
-        <!doctype html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-          <title>v86 + xterm switcher</title>
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                  <meta charset="UTF-8" />
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+                  <meta name="apple-mobile-web-app-capable" content="yes" />
+                  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+                  <meta name="apple-mobile-web-app-title" content="wSH" />
+                  <title>wSH Terminal</title>
 
-          <script src="libv86.js"></script>
-          <script src="xterm.js"></script>
-          <script src="xterm-addon-fit.js"></script>
-          <link rel="stylesheet" href="xterm.css">
+                  <link rel="stylesheet" href="xterm.css" />
+                  <script src="libv86.js"></script>
+                  <script src="xterm.js"></script>
+                  <script src="xterm-addon-fit.js"></script>
 
-          <style>
-            html, body {
-              margin: 0;
-              width: 100%;
-              height: 100%;
-              overflow: hidden;
-              background: #000;
-            }
+                  <style>
+                    html, body {
+                      margin: 0;
+                      padding: 0;
+                      width: 100%;
+                      height: 100%;
+                      overflow: hidden;
+                      background: #000;
+                    }
 
-            #vga, #term {
-              position: fixed;
-              inset: 0;
-              width: 100vw;
-              height: 100dvh;
-            }
+                    body {
+                      position: fixed;
+                      inset: 0;
+                    }
 
-            #vga {
-              display: block;
-              background: #000;
-            }
+                    #vga_container,
+                    #term_container {
+                      position: fixed;
+                      inset: 0;
+                      width: 100vw;
+                      height: 100dvh;
+                      background: #000;
+                    }
 
-            #term {
-              display: none;
-            }
+                    #vga_container {
+                      display: block;
+                    }
 
-            #vga canvas {
-              display: block;
-              width: 100% !important;
-              height: 100% !important;
-            }
-          </style>
-        </head>
-        <body>
-          <div id="vga"></div>
-          <div id="term"></div>
+                    #term_container {
+                      display: none;
+                    }
 
-          <script>
-            const vga = document.getElementById("vga");
-            const termHost = document.getElementById("term");
+                    /* Let v86's canvas fill the viewport without changing aspect ratio too aggressively */
+                    #vga_container canvas {
+                      display: block;
+                      width: auto !important;
+                      height: auto !important;
+                      max-width: 100vw;
+                      max-height: 100dvh;
+                    }
 
-            let switched = false;
-            let bootBuffer = "";
+                    /* xterm should fill its wrapper */
+                    #term_container .xterm,
+                    #term_container .xterm-viewport,
+                    #term_container .xterm-screen {
+                      height: 100% !important;
+                      width: 100% !important;
+                    }
+                  </style>
+                </head>
+                <body>
+                  <div id="vga_container"></div>
+                  <div id="term_container"></div>
 
-            const term = new Terminal({
-              convertEol: true,
-              cursorBlink: true
-            });
-            const fitAddon = new FitAddon.FitAddon();
-            term.loadAddon(fitAddon);
-            term.open(termHost);
+                  <script>
+                    const vgaContainer = document.getElementById("vga_container");
+                    const termContainer = document.getElementById("term_container");
 
-            function showTerminal() {
-              if (switched) return;
-              switched = true;
-              vga.style.display = "none";
-              termHost.style.display = "block";
-              fitAddon.fit();
-              term.focus();
-            }
+                    const terminal = new Terminal({
+                      convertEol: true,
+                      cursorBlink: true,
+                      fontSize: 16,
+                      fontFamily: "monospace",
+                      scrollback: 1000,
+                      disableStdin: false
+                    });
 
-            const emulator = new V86({
-              wasm_path: "v86.wasm",
-              memory_size: 128 * 1024 * 1024,
-              vga_memory_size: 8 * 1024 * 1024,
-              screen_container: vga,
-              bios: { url: "seabios.bin" },
-              vga_bios: { url: "vgabios.bin" },
-              cdrom: { url: "alpine.iso" },
-              autostart: true
-            });
+                    const fitAddon = new FitAddon.FitAddon();
+                    terminal.loadAddon(fitAddon);
+                    terminal.open(termContainer);
 
-            // Show terminal as soon as serial output appears.
-            emulator.add_listener("serial0-output-byte", function(byte) {
-              showTerminal();
-              const ch = String.fromCharCode(byte);
-              bootBuffer += ch;
-              term.write(ch);
-              console.log(ch);
-            });
+                    let switchedToTerminal = false;
+                    let serialLineBuffer = "";
 
-            // Send keyboard input from xterm back to the guest serial port.
-            term.onData(data => {
-              emulator.serial0_send(data);
-            });
+                    function fitTerminal() {
+                      try {
+                        fitAddon.fit();
+                      } catch (_) {}
+                    }
 
-            window.addEventListener("resize", () => {
-              if (switched) fitAddon.fit();
-            });
+                    function showTerminal() {
+                      if (switchedToTerminal) return;
+                      switchedToTerminal = true;
 
-            window.addEventListener("orientationchange", () => {
-              if (switched) setTimeout(() => fitAddon.fit(), 50);
-            });
-          </script>
-        </body>
-        </html>
+                      vgaContainer.style.display = "none";
+                      termContainer.style.display = "block";
+
+                      requestAnimationFrame(() => {
+                        fitTerminal();
+                        terminal.focus();
+                      });
+                    }
+
+                    function shouldIgnoreLine(line) {
+                      const cleaned = line.replace(/\r/g, "").trim();
+
+                      if (!cleaned) return true;
+
+                      // Ignore ISOLINUX banner regardless of version number.
+                      if (/^ISOLINUX\b.*Copyright.*$/i.test(cleaned)) return true;
+
+                      // Ignore the boot prompt line.
+                      if (/^boot:\s*$/i.test(cleaned)) return true;
+
+                      return false;
+                    }
+
+                    function handleSerialLine(line) {
+                      const cleaned = line.replace(/\r/g, "");
+
+                      if (shouldIgnoreLine(cleaned)) return;
+
+                      showTerminal();
+                      terminal.write(cleaned + "\r\n");
+                    }
+
+                    const emulator = new V86({
+                      wasm_path: "v86.wasm",
+                      memory_size: 128 * 1024 * 1024,
+                      vga_memory_size: 8 * 1024 * 1024,
+                      screen_container: vgaContainer,
+                      bios: { url: "seabios.bin" },
+                      vga_bios: { url: "vgabios.bin" },
+                      cdrom: { url: "alpine.iso" },
+                      autostart: true
+                    });
+
+                    emulator.add_listener("serial0-output-byte", function(byte) {
+                      const ch = String.fromCharCode(byte);
+
+                      if (ch === "\r") {
+                        return;
+                      }
+
+                      if (ch === "\n") {
+                        handleSerialLine(serialLineBuffer);
+                        serialLineBuffer = "";
+                        return;
+                      }
+
+                      serialLineBuffer += ch;
+                    });
+
+                    terminal.onData(function(data) {
+                      emulator.serial0_send(data);
+                    });
+
+                    window.addEventListener("resize", function() {
+                      if (switchedToTerminal) fitTerminal();
+                    });
+
+                    window.addEventListener("orientationchange", function() {
+                      if (switchedToTerminal) {
+                        setTimeout(fitTerminal, 50);
+                      }
+                    });
+                  </script>
+                </body>
+                </html>
         EOF
 
     - name: Bundle & Patch bundled.html
