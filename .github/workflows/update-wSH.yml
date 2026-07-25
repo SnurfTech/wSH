@@ -462,7 +462,7 @@ jobs:
         #perl -MMIME::Base64 -i -pe 'BEGIN { $file = "xterm.js"; $mime = "text/javascript"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
         #perl -MMIME::Base64 -i -pe 'BEGIN { $file = "xterm.css"; $mime = "text/css"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
         #perl -MMIME::Base64 -i -pe 'BEGIN { $file = "xterm-addon-fit.js"; $mime = "text/javascript"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
-        #perl -MMIME::Base64 -i -pe 'BEGIN { $file = "alpine.iso"; $mime = "application/octet-stream"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
+        #perl -MMIME::Base64 -i -pe 'BEGIN { $file = "alpine.img"; $mime = "application/octet-stream"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
         #perl -MMIME::Base64 -i -pe 'BEGIN { $file = "vmlinuz-virt"; $mime = "application/octet-stream"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
         #perl -MMIME::Base64 -i -pe 'BEGIN { $file = "initramfs-virt"; $mime = "application/octet-stream"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
 
@@ -476,7 +476,7 @@ jobs:
         mv wSH/*.js server/
         mv wSH/*.bin server/
         mv wSH/*-virt server/
-        mv wSH/alpine.iso server/
+        mv wSH/alpine.img server/
         mv wSH/xterm.css server/
         mv wSH/v86.wasm server/
 
