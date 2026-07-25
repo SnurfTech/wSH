@@ -38,9 +38,9 @@ mastodon_link                             :
 # Feature List                            Edit, add or remove features to be presented.
 features                                  :
 
-  - title                                 : Full
-    description                           : Just tap your screen to make your bird flap upwards.
-    fontawesome_icon_name                 : fingerprint
+  - title                                 : Full Alpine Linux
+    description                           : A full version of Alpine Linux right in an iOS app!
+    fontawesome_icon_name                 : linux
     
   - title                                 : Not on the App Store
     description                           : "This app is installed via a mobileconfig. Apple can't remove this app from the App Store if it isn't even there!"
@@ -54,9 +54,9 @@ features                                  :
     description                           : An on-screen keyboard with buttons like CTRL and ALT will appear when using wSH, so you can actually use Linux.
     fontawesome_icon_name                 : keyboard
   
-  - title                                 : Quick Restart Function
-    description                           : Minimal downtime between runs so you can dive right back into the world of infinite pipes. Just tap the screen to restart!
-    fontawesome_icon_name                 : arrow-rotate-right
+  - title                                 : Internet Support
+    description                           : Full internet support is included, by using the relay link, wss://relay.widgetry.org.
+    fontawesome_icon_name                 : wifi
 
   - title                                 : Completely Free
     description                           : Just like the original iSH, this app is completely free.
