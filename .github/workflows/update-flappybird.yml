@@ -13,7 +13,7 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Create Build Folder and Download Dependencies
+    - name: Create Build Folder and Set Up Dependencies
       run: |
         mkdir wSH
         cd wSH
@@ -25,6 +25,10 @@ jobs:
         wget https://dl-cdn.alpinelinux.org/alpine/v3.24/releases/x86/alpine-virt-3.24.1-x86.iso -O alpine.iso
         wget https://github.com/copy/v86/raw/refs/heads/master/bios/seabios.bin
         wget https://github.com/copy/v86/raw/refs/heads/master/bios/vgabios.bin
+        apt install p7zip -y
+        7z x alpine.iso
+        mv boot/vmlinuz-virt .
+        mv boot/initramfs-virt .
 
     - name: Create bundled.html
       run: |
@@ -79,71 +83,63 @@ jobs:
           <div id="term"></div>
 
           <script>
-          const vga = document.getElementById("screen_container");
+            const vga = document.getElementById("vga");
+            const termHost = document.getElementById("term");
 
-          // Create the hidden xterm container
-          const termDiv = document.createElement("div");
-          termDiv.id = "terminal";
-          termDiv.style.cssText = `
-          position:fixed;
-          inset:0;
-          display:none;
-          background:#000;
-          `;
-          document.body.appendChild(termDiv);
+            let switched = false;
+            let bootBuffer = "";
 
-          const term = new Terminal({
-              cursorBlink: true,
+            const term = new Terminal({
               convertEol: true,
-              fontFamily: "monospace",
-              fontSize: 16,
-          });
+              cursorBlink: true
+            });
+            const fitAddon = new FitAddon.FitAddon();
+            term.loadAddon(fitAddon);
+            term.open(termHost);
 
-          const fitAddon = new FitAddon.FitAddon();
-          term.loadAddon(fitAddon);
-          term.open(termDiv);
-
-          let switched = false;
-          let filtering = true;
-          let currentLine = "";
-          let bufferedOutput = "";
-
-          function showTerminal() {
+            function showTerminal() {
               if (switched) return;
-
               switched = true;
-
               vga.style.display = "none";
-              termDiv.style.display = "block";
+              termHost.style.display = "block";
               fitAddon.fit();
               term.focus();
+            }
 
-              if (bufferedOutput.length) {
-                  term.write(bufferedOutput);
-                  bufferedOutput = "";
-              }
-          }
-
-          const emulator = new V86({
+            const emulator = new V86({
               wasm_path: "v86.wasm",
               memory_size: 128 * 1024 * 1024,
               vga_memory_size: 8 * 1024 * 1024,
               screen_container: vga,
               bios: { url: "seabios.bin" },
               vga_bios: { url: "vgabios.bin" },
+              bzimage: { url: "vmlinuz-virt" },
+              initrd: { url: "initramfs-virt" },
               cdrom: { url: "alpine.iso" },
+              cmdline: "console=ttyS0,115200",
               autostart: true
-          });
+            });
 
-          emulator.add_listener("serial0-output-byte", byte => {
-              console.log(byte, JSON.stringify(String.fromCharCode(byte)));
-          });
+            // Show terminal as soon as serial output appears.
+            emulator.add_listener("serial0-output-byte", function(byte) {
+              showTerminal();
+              const ch = String.fromCharCode(byte);
+              bootBuffer += ch;
+              term.write(ch);
+            });
 
-          term.onData(data => emulator.serial0_send(data));
+            // Send keyboard input from xterm back to the guest serial port.
+            term.onData(data => {
+              emulator.serial0_send(data);
+            });
 
-          window.addEventListener("resize", () => {
+            window.addEventListener("resize", () => {
               if (switched) fitAddon.fit();
-          });
+            });
+
+            window.addEventListener("orientationchange", () => {
+              if (switched) setTimeout(() => fitAddon.fit(), 50);
+            });
           </script>
         </body>
         </html>
@@ -160,6 +156,8 @@ jobs:
         perl -MMIME::Base64 -i -pe 'BEGIN { $file = "xterm.css"; $mime = "text/css"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
         perl -MMIME::Base64 -i -pe 'BEGIN { $file = "xterm-addon-fit.js"; $mime = "text/javascript"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
         perl -MMIME::Base64 -i -pe 'BEGIN { $file = "alpine.iso"; $mime = "application/octet-stream"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
+        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "vmlinuz-virt"; $mime = "application/octet-stream"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
+        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "initramfs-virt"; $mime = "application/octet-stream"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
 
     - name: Replace Old index.html File
       run: |
