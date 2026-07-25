@@ -13,13 +13,144 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Generate Bundled HTML File and Patch Files
+    - name: Create Build Folder and Download Dependencies
       run: |
+        mkdir wSH
+        cd wSH
+        wget https://github.com/copy/v86/releases/download/latest/libv86.js
+        wget https://github.com/copy/v86/releases/download/latest/v86.wasm
+        wget https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js
+        wget https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js
+        wget https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css
+        wget https://dl-cdn.alpinelinux.org/alpine/v3.24/releases/x86/alpine-virt-3.24.1-x86.iso -O alpine.iso
+
+    - name: Create bundled.html
+      run: |
+        cd wSH
+        cat << EOF > bundled.html
+        <!doctype html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+          <title>v86 + xterm switcher</title>
+
+          <script src="libv86.js"></script>
+          <script src="xterm.js"></script>
+          <script src="xterm-addon-fit.js"></script>
+          <link rel="stylesheet" href="xterm.css">
+
+          <style>
+            html, body {
+              margin: 0;
+              width: 100%;
+              height: 100%;
+              overflow: hidden;
+              background: #000;
+            }
+
+            #vga, #term {
+              position: fixed;
+              inset: 0;
+              width: 100vw;
+              height: 100dvh;
+            }
+
+            #vga {
+              display: block;
+              background: #000;
+            }
+
+            #term {
+              display: none;
+            }
+
+            #vga canvas {
+              display: block;
+              width: 100% !important;
+              height: 100% !important;
+            }
+          </style>
+        </head>
+        <body>
+          <div id="vga"></div>
+          <div id="term"></div>
+
+          <script>
+            const vga = document.getElementById("vga");
+            const termHost = document.getElementById("term");
+
+            let switched = false;
+            let bootBuffer = "";
+
+            const term = new Terminal({
+              convertEol: true,
+              cursorBlink: true
+            });
+            const fitAddon = new FitAddon.FitAddon();
+            term.loadAddon(fitAddon);
+            term.open(termHost);
+
+            function showTerminal() {
+              if (switched) return;
+              switched = true;
+              vga.style.display = "none";
+              termHost.style.display = "block";
+              fitAddon.fit();
+              term.focus();
+            }
+
+            const emulator = new V86({
+              wasm_path: "v86.wasm",
+              memory_size: 128 * 1024 * 1024,
+              vga_memory_size: 8 * 1024 * 1024,
+              screen_container: vga,
+              bios: { url: "seabios.bin" },
+              vga_bios: { url: "vgabios.bin" },
+              cdrom: { url: "alpine.iso" },
+              autostart: true
+            });
+
+            // Show terminal as soon as serial output appears.
+            emulator.add_listener("serial0-output-byte", function(byte) {
+              showTerminal();
+              const ch = String.fromCharCode(byte);
+              bootBuffer += ch;
+              term.write(ch);
+            });
+
+            // Send keyboard input from xterm back to the guest serial port.
+            term.onData(data => {
+              emulator.serial0_send(data);
+            });
+
+            window.addEventListener("resize", () => {
+              if (switched) fitAddon.fit();
+            });
+
+            window.addEventListener("orientationchange", () => {
+              if (switched) setTimeout(() => fitAddon.fit(), 50);
+            });
+          </script>
+        </body>
+        </html>
+        EOF
+
+    - name: Bundle & Patch bundled.html
+      run: |
+        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "libv86.js"; $mime = "text/javascript"; $b64 = encode_base64(do { local $/; open my $fh, "<", $file or die $!; <$fh> }, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
+        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "v86.wasm"; $mime = "application/wasm"; $b64 = encode_base64(do { local $/; open my $fh, "<", $file or die $!; <$fh> }, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
+        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "seabios.bin"; $mime = "application/octet-stream"; $b64 = encode_base64(do { local $/; open my $fh, "<", $file or die $!; <$fh> }, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
+        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "vgabios.bin"; $mime = "application/octet-stream"; $b64 = encode_base64(do { local $/; open my $fh, "<", $file or die $!; <$fh> }, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
+        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "xterm.js"; $mime = "text/javascript"; $b64 = encode_base64(do { local $/; open my $fh, "<", $file or die $!; <$fh> }, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
+        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "xterm.css"; $mime = "text/css"; $b64 = encode_base64(do { local $/; open my $fh, "<", $file or die $!; <$fh> }, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
+        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "xterm-addon-fit.js"; $mime = "text/javascript"; $b64 = encode_base64(do { local $/; open my $fh, "<", $file or die $!; <$fh> }, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
+        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "alpine.iso"; $mime = "application/octet-stream"; $b64 = encode_base64(do { local $/; open my $fh, "<", $file or die $!; <$fh> }, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
 
     - name: Replace Old index.html File
       run: |
         [[ -f server/index.html ]] && rm server/index.html
-        mv JS-Flappy-Bird/bundled.html server/index.html
+        mv wSH/bundled.html server/index.html
 
     - name: Update Icon Data
       run: |
