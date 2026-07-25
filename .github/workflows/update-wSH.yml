@@ -1,4 +1,4 @@
-name: Update Flappybird
+name: Update wSH
 on:
   push:
     branches: [ main ]
