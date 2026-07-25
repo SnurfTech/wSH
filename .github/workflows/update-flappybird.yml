@@ -113,12 +113,22 @@ jobs:
               autostart: true
             });
 
-            // Show terminal as soon as serial output appears.
-            emulator.add_listener("serial0-output-byte", function(byte) {
-              showTerminal();
+            let lineBuf = "";
+            let checkedFirstLine = false;
+
+            emulator.add_listener("serial0-output-byte", (byte) => {
               const ch = String.fromCharCode(byte);
-              bootBuffer += ch;
-              term.write(ch);
+
+              if (!checkedFirstLine) {
+                if (ch === "\n") {
+                  checkedFirstLine = true;
+                  if (lineBuf.toLowerCase().includes("openrc")) {
+                    showTerminal();
+                  }
+                } else if (ch !== "\r") {
+                  lineBuf += ch;
+                }
+              }
             });
 
             // Send keyboard input from xterm back to the guest serial port.
