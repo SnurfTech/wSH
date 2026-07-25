@@ -228,7 +228,7 @@ jobs:
         mv wSH/*-virt server/
         mv wSH/alpine.iso server/
         mv wSH/xterm.css server/
-        mv wSH/x86.wasm server/
+        mv wSH/v86.wasm server/
 
     - name: Update Icon Data
       run: |
