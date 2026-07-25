@@ -135,48 +135,8 @@ jobs:
               autostart: true
           });
 
-          emulator.add_listener("serial0-output-byte", function(byte) {
-              const ch = String.fromCharCode(byte);
-
-              if (!switched) {
-
-                  if (filtering) {
-
-                      currentLine += ch;
-
-                      if (ch === "\n") {
-
-                          const line = currentLine.trim();
-
-                          currentLine = "";
-
-                          if (
-                              line.startsWith("ISOLINUX ") ||
-                              line === "boot:" ||
-                              line === ""
-                          ) {
-                              // Ignore these forever.
-                              return;
-                          }
-
-                          // First real line.
-                          filtering = false;
-                          showTerminal();
-
-                          if (line.length) {
-                              term.write(line + "\r\n");
-                          }
-
-                          return;
-                      }
-
-                      return;
-                  }
-
-                  showTerminal();
-              }
-
-              term.write(ch);
+          emulator.add_listener("serial0-output-byte", byte => {
+              console.log(byte, JSON.stringify(String.fromCharCode(byte)));
           });
 
           term.onData(data => emulator.serial0_send(data));
