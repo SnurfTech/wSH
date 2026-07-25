@@ -48,113 +48,156 @@ jobs:
       run: |
         cd wSH
         cat << "EOF" > bundled.html
-        <!doctype html>
-        <html>
+        <!DOCTYPE html>
+        <html lang="en">
         <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-          <title>v86 + xterm switcher</title>
+        <meta charset="UTF-8">
+        <meta
+            name="viewport"
+            content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no">
 
-          <script src="libv86.js"></script>
-          <script src="xterm.js"></script>
-          <script src="xterm-addon-fit.js"></script>
-          <link rel="stylesheet" href="xterm.css">
+        <title>Alpine Terminal</title>
 
-          <style>
-            html, body {
-              margin: 0;
-              width: 100%;
-              height: 100%;
-              overflow: hidden;
-              background: #000;
-            }
+        <link rel="stylesheet" href="xterm.css">
 
-            #vga, #term {
-              position: fixed;
-              inset: 0;
-              width: 100vw;
-              height: 100dvh;
-            }
+        <style>
+        html,
+        body {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+        }
 
-            #vga {
-              display: block;
-              background: #000;
-            }
+        #terminal {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100dvh;
+            padding:
+                env(safe-area-inset-top)
+                env(safe-area-inset-right)
+                env(safe-area-inset-bottom)
+                env(safe-area-inset-left);
+            box-sizing: border-box;
+        }
 
-            #term {
-              display: none;
-            }
+        /* Hidden because we're using serial only */
+        #screen_container {
+            display: none;
+        }
+        </style>
 
-            #vga canvas {
-              display: block;
-              width: 100% !important;
-              height: 100% !important;
-            }
-          </style>
+        <script src="xterm.js"></script>
+        <script src="xterm-addon-fit.js"></script>
+
+        <script src="libv86.js"></script>
         </head>
+
         <body>
-          <div id="vga"></div>
-          <div id="term"></div>
 
-          <script>
-            const vga = document.getElementById("vga");
-            const termHost = document.getElementById("term");
+        <div id="terminal"></div>
+        <div id="screen_container"></div>
 
-            let switched = false;
-            let bootBuffer = "";
+        <script>
+        const term = new Terminal({
+            cursorBlink: true,
+            convertEol: true,
+            fontFamily: "monospace",
+            fontSize: 16,
+            scrollback: 10000
+        });
 
-            const term = new Terminal({
-              convertEol: true,
-              cursorBlink: true
+        const fitAddon = new FitAddon.FitAddon();
+        term.loadAddon(fitAddon);
+
+        term.open(document.getElementById("terminal"));
+        fitAddon.fit();
+
+        const emulator = new V86({
+            wasm_path: "v86.wasm",
+
+            memory_size: 256 * 1024 * 1024,
+            vga_memory_size: 8 * 1024 * 1024,
+
+            // Hidden
+            screen_container: document.getElementById("screen_container"),
+
+            bios: {
+                url: "seabios.bin"
+            },
+
+            vga_bios: {
+                url: "vgabios.bin"
+            },
+
+            bzimage: {
+                url: "vmlinuz-virt"
+            },
+
+            initrd: {
+                url: "initramfs-virt"
+            },
+
+            cdrom: {
+                url: "alpine.iso"
+            },
+
+            cmdline:
+                "console=ttyS0,115200 " +
+                "earlyprintk=serial,ttyS0,115200 " +
+                "loglevel=7",
+
+            autostart: true
+        });
+
+        // Receive serial data
+        function writeByte(b)
+        {
+            term.write(String.fromCharCode(b));
+        }
+
+        if (emulator.add_listener)
+        {
+            emulator.add_listener("serial0-output-byte", writeByte);
+
+            emulator.add_listener("serial0-output-char", function(c)
+            {
+                term.write(c);
             });
-            const fitAddon = new FitAddon.FitAddon();
-            term.loadAddon(fitAddon);
-            term.open(termHost);
 
-            function showTerminal() {
-              if (switched) return;
-              switched = true;
-              vga.style.display = "none";
-              termHost.style.display = "block";
-              fitAddon.fit();
-              term.focus();
-            }
-
-            const emulator = new V86({
-              wasm_path: "v86.wasm",
-              memory_size: 128 * 1024 * 1024,
-              vga_memory_size: 8 * 1024 * 1024,
-              screen_container: vga,
-              bios: { url: "seabios.bin" },
-              vga_bios: { url: "vgabios.bin" },
-              bzimage: { url: "vmlinuz-virt" },
-              initrd: { url: "initramfs-virt" },
-              cdrom: { url: "alpine.iso" },
-              cmdline: "console=ttyS0,115200",
-              autostart: true
+            emulator.add_listener("serial0-output-line", function(line)
+            {
+                term.writeln(line);
             });
+        }
 
-            // Show terminal as soon as serial output appears.
-            emulator.add_listener("serial0-output-byte", function(byte) {
-              showTerminal();
-              const ch = String.fromCharCode(byte);
-              bootBuffer += ch;
-              term.write(ch);
-            });
+        // Send keyboard input back to serial
+        term.onData(function(data)
+        {
+            emulator.serial0_send(data);
+        });
 
-            // Send keyboard input from xterm back to the guest serial port.
-            term.onData(data => {
-              emulator.serial0_send(data);
-            });
+        function resizeTerminal()
+        {
+            fitAddon.fit();
+        }
 
-            window.addEventListener("resize", () => {
-              if (switched) fitAddon.fit();
-            });
+        window.addEventListener("resize", resizeTerminal);
+        window.addEventListener("orientationchange", function()
+        {
+            setTimeout(resizeTerminal, 100);
+        });
 
-            window.addEventListener("orientationchange", () => {
-              if (switched) setTimeout(() => fitAddon.fit(), 50);
-            });
-          </script>
+        window.addEventListener("focus", function()
+        {
+            term.focus();
+        });
+
+        term.focus();
+        </script>
+
         </body>
         </html>
         EOF
