@@ -141,14 +141,14 @@ jobs:
     - name: Bundle & Patch bundled.html
       run: |
         cd wSH
-        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "libv86.js"; $mime = "text/javascript"; $b64 = encode_base64(do { local $/; open my $fh, "<", $file or die $!; <$fh> }, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
-        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "v86.wasm"; $mime = "application/wasm"; $b64 = encode_base64(do { local $/; open my $fh, "<", $file or die $!; <$fh> }, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
-        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "seabios.bin"; $mime = "application/octet-stream"; $b64 = encode_base64(do { local $/; open my $fh, "<", $file or die $!; <$fh> }, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
-        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "vgabios.bin"; $mime = "application/octet-stream"; $b64 = encode_base64(do { local $/; open my $fh, "<", $file or die $!; <$fh> }, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
-        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "xterm.js"; $mime = "text/javascript"; $b64 = encode_base64(do { local $/; open my $fh, "<", $file or die $!; <$fh> }, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
-        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "xterm.css"; $mime = "text/css"; $b64 = encode_base64(do { local $/; open my $fh, "<", $file or die $!; <$fh> }, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
-        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "xterm-addon-fit.js"; $mime = "text/javascript"; $b64 = encode_base64(do { local $/; open my $fh, "<", $file or die $!; <$fh> }, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
-        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "alpine.iso"; $mime = "application/octet-stream"; $b64 = encode_base64(do { local $/; open my $fh, "<", $file or die $!; <$fh> }, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
+        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "libv86.js"; $mime = "text/javascript"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
+        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "v86.wasm"; $mime = "application/wasm"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
+        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "seabios.bin"; $mime = "application/octet-stream"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
+        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "vgabios.bin"; $mime = "application/octet-stream"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
+        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "xterm.js"; $mime = "text/javascript"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
+        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "xterm.css"; $mime = "text/css"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
+        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "xterm-addon-fit.js"; $mime = "text/javascript"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
+        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "alpine.iso"; $mime = "application/octet-stream"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
 
     - name: Replace Old index.html File
       run: |
