@@ -222,13 +222,13 @@ jobs:
         #mv wSH/bundled.html server/index.html
         rm -r server
         mkdir server
-        mv bundled.html server/index.html
-        mv *.js server/
-        mv *.bin server/
-        mv *-virt server/
-        mv alpine.iso server/
-        mv xterm.css server/
-        mv x86.wasm server/
+        mv wSH/bundled.html server/index.html
+        mv wSH/*.js server/
+        mv wSH/*.bin server/
+        mv wSH/*-virt server/
+        mv wSH/alpine.iso server/
+        mv wSH/xterm.css server/
+        mv wSH/x86.wasm server/
 
     - name: Update Icon Data
       run: |
