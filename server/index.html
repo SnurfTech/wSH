@@ -173,7 +173,7 @@ const emulator = new V86({
     cmdline:
         "console=ttyS0,115200 " +
         "earlyprintk=serial,ttyS0,115200 " +
-        "loglevel=7",
+        "loglevel=7 root=/dev/sda",
 
     net_device: {
         type: "ne2k",
