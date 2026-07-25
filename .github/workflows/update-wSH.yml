@@ -47,7 +47,7 @@ jobs:
     - name: Create bundled.html
       run: |
         cd wSH
-        cat << "EOF" > bundled.html
+        cat << "EOF" > index.html
         <!DOCTYPE html>
         <html lang="en">
         <head>
@@ -196,39 +196,88 @@ jobs:
         });
 
         term.focus();
+
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("sw.js");
+        }
         </script>
 
         </body>
         </html>
         EOF
 
-    - name: Bundle & Patch bundled.html
+    - name: Create Service Worker
       run: |
         cd wSH
-        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "libv86.js"; $mime = "text/javascript"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
-        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "v86.wasm"; $mime = "application/wasm"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
-        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "seabios.bin"; $mime = "application/octet-stream"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
-        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "vgabios.bin"; $mime = "application/octet-stream"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
-        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "xterm.js"; $mime = "text/javascript"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
-        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "xterm.css"; $mime = "text/css"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
-        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "xterm-addon-fit.js"; $mime = "text/javascript"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
-        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "alpine.iso"; $mime = "application/octet-stream"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
-        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "vmlinuz-virt"; $mime = "application/octet-stream"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
-        perl -MMIME::Base64 -i -pe 'BEGIN { $file = "initramfs-virt"; $mime = "application/octet-stream"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
+        cat << "EOF" > sw.js
+        const CACHE = "v86-offline-v1";
+
+        const FILES = [
+            "./",
+            "./index.html",
+
+            "./libv86.js",
+            "./v86.wasm",
+
+            "./seabios.bin",
+            "./vgabios.bin",
+
+            "./vmlinuz-virt",
+            "./initramfs-virt",
+            "./alpine.iso",
+
+            "./xterm.js",
+            "./xterm.css",
+            "./xterm-addon-fit.js"
+        ];
+
+        self.addEventListener("install", event => {
+            event.waitUntil(
+                caches.open(CACHE).then(cache => cache.addAll(FILES))
+            );
+            self.skipWaiting();
+        });
+
+        self.addEventListener("activate", event => {
+            event.waitUntil(clients.claim());
+        });
+
+        self.addEventListener("fetch", event => {
+            event.respondWith(
+                caches.match(event.request).then(response => {
+                    return response || fetch(event.request);
+                })
+            );
+        });
+        EOF
+
+    - name: Bundle & Patch bundled.html
+      run: |
+        #cd wSH
+        #perl -MMIME::Base64 -i -pe 'BEGIN { $file = "libv86.js"; $mime = "text/javascript"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
+        #perl -MMIME::Base64 -i -pe 'BEGIN { $file = "v86.wasm"; $mime = "application/wasm"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
+        #perl -MMIME::Base64 -i -pe 'BEGIN { $file = "seabios.bin"; $mime = "application/octet-stream"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
+        #perl -MMIME::Base64 -i -pe 'BEGIN { $file = "vgabios.bin"; $mime = "application/octet-stream"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
+        #perl -MMIME::Base64 -i -pe 'BEGIN { $file = "xterm.js"; $mime = "text/javascript"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
+        #perl -MMIME::Base64 -i -pe 'BEGIN { $file = "xterm.css"; $mime = "text/css"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
+        #perl -MMIME::Base64 -i -pe 'BEGIN { $file = "xterm-addon-fit.js"; $mime = "text/javascript"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
+        #perl -MMIME::Base64 -i -pe 'BEGIN { $file = "alpine.iso"; $mime = "application/octet-stream"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
+        #perl -MMIME::Base64 -i -pe 'BEGIN { $file = "vmlinuz-virt"; $mime = "application/octet-stream"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
+        #perl -MMIME::Base64 -i -pe 'BEGIN { $file = "initramfs-virt"; $mime = "application/octet-stream"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
 
     - name: Replace Old index.html File
       run: |
-        [[ -f server/index.html ]] && rm server/index.html
-        mv wSH/bundled.html server/index.html
-        #rm -r server
-        #mkdir server
+        #[[ -f server/index.html ]] && rm server/index.html
         #mv wSH/bundled.html server/index.html
-        #mv wSH/*.js server/
-        #mv wSH/*.bin server/
-        #mv wSH/*-virt server/
-        #mv wSH/alpine.iso server/
-        #mv wSH/xterm.css server/
-        #mv wSH/v86.wasm server/
+        rm -r server
+        mkdir server
+        mv wSH/index.html server/
+        mv wSH/*.js server/
+        mv wSH/*.bin server/
+        mv wSH/*-virt server/
+        mv wSH/alpine.iso server/
+        mv wSH/xterm.css server/
+        mv wSH/v86.wasm server/
 
     - name: Update Icon Data
       run: |
@@ -240,7 +289,7 @@ jobs:
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
         git add unsigned.mobileconfig
-        git add server/index.html
-        #git add server
+        #git add server/index.html
+        git add server
         git commit -m "Automated update: Updated unsigned Mobileconfig and wSH HTML" || echo "No changes to commit"
         git push
