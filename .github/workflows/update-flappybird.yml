@@ -122,7 +122,7 @@ jobs:
               if (!checkedFirstLine) {
                 if (ch === "\n") {
                   checkedFirstLine = true;
-                  if (lineBuf.toLowerCase().includes("openrc")) {
+                  if (lineBuf.toLowerCase().includes("localhost login")) {
                     showTerminal();
                   }
                 } else if (ch !== "\r") {
