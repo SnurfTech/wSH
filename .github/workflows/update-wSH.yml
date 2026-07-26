@@ -71,7 +71,7 @@ jobs:
         zcat ../initramfs-virt | sudo cpio -idmv
         rm ../initramfs-virt
         #sed -i 's|$MOCK mount -t tmpfs -o "$rootflags" tmpfs "$sysroot"|$MOCK mount -t ext4 -o "$rootflags" /dev/sda "$sysroot"|g' init
-        perl -pi -e 's/\$\{rootfstype:\+-t\}\s+\$\{rootfstype\}/-t ext4/g' init
+        perl -pi -e 's/\$\{rootfstype:\+-t\}\s+\$\{rootfstype\}/-t ext4/g; s/"\$\{KOPT_rootflags:-ro\}"/"rw"/g' init
         find . -print0 | sudo cpio --null -ov --format=newc > ../initramfs-virt
 
     - name: Create bundled.html
