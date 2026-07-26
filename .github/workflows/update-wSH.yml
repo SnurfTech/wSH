@@ -57,7 +57,13 @@ jobs:
         cat << "EOF" | sudo tee -a rootfs/etc/inittab
         ttyS0::respawn:/sbin/agetty -a root -L ttyS0 115200 vt100
         EOF
-        sudo sed -i 's|^root.*|root::14847:0:99999:7:::|g' rootfs/etc/shadow
+        cat << "EOF" | sudo tee -a rootfs/etc/profile
+        clear
+        EOF
+        cat << "EOF" | sudo tee rootfs/etc/motd
+        Welcome to wSH!
+        You can change this message at any time by editing /etc/motd.
+        EOF
         wget https://gitlab.alpinelinux.org/api/v4/projects/5/packages/generic/v2.14.6/x86_64/apk.static
         chmod +x apk.static
         sudo ./apk.static --root rootfs --initdb --arch x86 --repository https://dl-cdn.alpinelinux.org/alpine/v3.24/main --allow-untrusted add openrc
