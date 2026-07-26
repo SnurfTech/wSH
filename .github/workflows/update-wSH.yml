@@ -68,7 +68,7 @@ jobs:
         sudo ln -s /etc/init.d/mdevd rootfs/etc/runlevels/sysinit/mdevd
         sudo ln -s /etc/init.d/mdevd-init rootfs/etc/runlevels/sysinit/mdevd-init
         sudo ln -s /etc/init.d/hostname rootfs/etc/runlevels/boot/hostname
-        cat << "EOF" > rootfs/etc/local.d/startup.start
+        cat << "EOF" | sudo tee rootfs/etc/local.d/startup.start
         #!/bin/sh
         /sbin/syslogd
         EOF
