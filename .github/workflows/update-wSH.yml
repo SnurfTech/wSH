@@ -154,7 +154,7 @@ jobs:
         mkdir -p /newroot
 
         echo "Mounting /dev/sda..."
-        if ! mount -o rw /dev/sda /newroot; then
+        if ! mount -t ext4 -o rw /dev/sda /newroot; then
             echo "ERROR: Failed to mount /dev/sda in read-write mode."
             echo "Starting emergency shell..."
             exec /bin/sh
