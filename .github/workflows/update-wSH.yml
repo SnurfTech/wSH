@@ -329,7 +329,7 @@ jobs:
         <div id="screen_container"></div>
 
         <script>
-
+        (async () => {
         async function loadSplitDisk(prefix, parts) {
             const blobs = [];
 
@@ -566,6 +566,7 @@ jobs:
         if ("serviceWorker" in navigator) {
             navigator.serviceWorker.register("sw.js");
         }
+        })();
         </script>
 
         </body>
