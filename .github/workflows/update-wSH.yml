@@ -60,12 +60,17 @@ jobs:
         cat << "EOF" | sudo tee rootfs/etc/motd
         Welcome to wSH!
         You can change this message at any time by editing /etc/motd.
+        
         EOF
         wget https://gitlab.alpinelinux.org/api/v4/projects/5/packages/generic/v2.14.6/x86_64/apk.static
         chmod +x apk.static
         sudo ./apk.static --root rootfs --initdb --arch x86 --repository https://dl-cdn.alpinelinux.org/alpine/v3.24/main --allow-untrusted add openrc mdevd-openrc agetty
         sudo ln -s /etc/init.d/mdevd rootfs/etc/runlevels/sysinit/mdevd
         sudo ln -s /etc/init.d/mdevd-init rootfs/etc/runlevels/sysinit/mdevd-init
+        sudo ln -s /etc/init.d/hostname rootfs/etc/runlevels/boot/hostname
+        cat << EOF | sudo tee rootfs/etc/sysctl.d/99-silent.conf
+        kernel.printk = 3 4 1 3
+        EOF
         sudo dd if=/dev/zero of=alpine.img bs=1M count=100
         sudo mkfs.ext4 alpine.img
         mkdir /tmp/hda-mount
