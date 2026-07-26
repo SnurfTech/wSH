@@ -47,7 +47,7 @@ jobs:
         mkdir rootfs
         for i in apks/x86/*.apk; do sudo tar -p --same-owner -P --acls --xattrs -xvf $i -C rootfs; done
         cat << "EOF" | sudo tee rootfs/etc/fstab
-        /dev/hda / ext4 defaults 1 1
+        /dev/sda / ext4 defaults 1 1
         EOF
         cat << "EOF" | sudo tee -a rootfs/etc/inittab
         ttyS0::respawn:/sbin/getty -L 115200 ttyS0 vt100
