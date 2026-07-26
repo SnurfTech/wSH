@@ -73,7 +73,7 @@ jobs:
         #sed -i 's|$MOCK mount -t tmpfs -o "$rootflags" tmpfs "$sysroot"|$MOCK mount -t ext4 -o "$rootflags" /dev/sda "$sysroot"|g' init
         #perl -pi -e 's/\$\{rootfstype:\+-t\}\s+\$\{rootfstype\}/-t ext4/g' init
         #sed -i 's|"$mountopts"|rw|g' init
-        cat << EOF > init
+        cat << EOF | sudo tee init
         #!/bin/sh
 
         # 1. Mount essential virtual filesystems
@@ -86,10 +86,69 @@ jobs:
 
         echo "=== Initramfs Booting ==="
 
-        # 2. Create target directory for switch_root
+        # 2. Parse kernel command line options
+        for opt in $(cat /proc/cmdline); do
+            case "$opt" in
+                modules=*) KOPT_modules="${opt#*=}" ;;
+                rootfstype=*) KOPT_rootfstype="${opt#*=}" ;;
+                zfcp=*) KOPT_zfcp="${opt#*=}" ;;
+                dasd=*) KOPT_dasd="${opt#*=}" ;;
+                s390x_net=*) KOPT_s390x_net="${opt#*=}" ;;
+                memdisk=*) KOPT_memdisk="${opt#*=}" ;;
+                wireguard=*) KOPT_wireguard="${opt#*=}" ;;
+                nbd=*) KOPT_nbd="${opt#*=}" ;;
+                aoe=*) KOPT_aoe="${opt#*=}" ;;
+            esac
+        done
+
+        echo "Loading modules..."
+
+        # Load memdisk drivers if requested [cite: 86, 87]
+        if [ "$KOPT_memdisk" = "yes" ]; then
+            modprobe phram phram=memdisk,$(memdiskfind) 2>/dev/null 
+            modprobe mtdblock 2>/dev/null 
+        fi
+
+        # Load S390x mainframe drivers if requested [cite: 91, 92, 93, 94, 95]
+        if [ -n "$KOPT_zfcp" ]; then
+            modprobe zfcp 2>/dev/null 
+        fi
+
+        if [ -n "$KOPT_dasd" ]; then
+            for mod in dasd_mod dasd_eckd_mod dasd_fba_mod; do 
+                modprobe $mod 2>/dev/null [cite: 93]
+            done
+        fi
+
+        if [ "${KOPT_s390x_net%%,*}" = "qeth_l2" ]; then [cite: 94]
+            for mod in qeth qeth_l2 qeth_l3; do 
+                modprobe $mod 2>/dev/null [cite: 95]
+            done
+        fi
+
+        # Load standard storage, filesystem, and kernel-command-line modules 
+        modprobe -a $(echo "$KOPT_modules $KOPT_rootfstype" | tr ',' ' ') loop squashfs simpledrm 2>/dev/null 
+
+        # Read and load modules listed in /etc/modules [cite: 96, 97, 98]
+        if [ -f /etc/modules ]; then [cite: 96, 97]
+            sed 's/\#.*//g' < /etc/modules | while read -r module args; do 
+                [ -n "$module" ] && modprobe -q $module $args [cite: 98]
+            done
+        fi
+
+        # VMware storage & CD-ROM compatibility driver workaround 
+        if grep -q VMware /sys/devices/virtual/dmi/id/sys_vendor 2>/dev/null; then 
+            modprobe -a ata_piix mptspi sr-mod 2>/dev/null [cite: 99]
+        fi
+
+        # Load optional network and block device tunnel drivers [cite: 54, 56, 102, 104, 106]
+        [ -n "$KOPT_wireguard" ] && modprobe -q wireguard 2>/dev/null 
+        [ -n "$KOPT_nbd" ] && modprobe -q nbd max_part=8 2>/dev/null 
+        [ -n "$KOPT_aoe" ] && modprobe aoe 2>/dev/null 
+
+        # 3. Create target directory and mount /dev/sda as read-write (rw)
         mkdir -p /newroot
 
-        # 3. Mount /dev/sda as read-write (rw)
         echo "Mounting /dev/sda..."
         if ! mount -o rw /dev/sda /newroot; then
             echo "ERROR: Failed to mount /dev/sda in read-write mode."
@@ -112,7 +171,7 @@ jobs:
             exec switch_root /newroot /init
         fi
 
-        # Emergency fallback if switch_root fails or init is missing
+        # Emergency fallback
         echo "ERROR: Unable to execute init process in /dev/sda."
         exec /bin/sh
         EOF
