@@ -353,7 +353,7 @@ jobs:
             (_, i) => {
                 const first = String.fromCharCode(97 + Math.floor(i / 26));
                 const second = String.fromCharCode(97 + (i % 26));
-                return `alpine.hda.part.${first}${second}`;
+                return `alpine.img.part.${first}${second}`;
             }
         );
 
