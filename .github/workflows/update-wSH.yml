@@ -81,7 +81,7 @@ jobs:
         sudo cp -a rootfs/. /tmp/hda-mount/
         sudo umount /tmp/hda-mount
         rmdir /tmp/hda-mount
-        split -b 95M alpine.img alpine.img.part.
+        split -b 50M alpine.img alpine.img.part.
         mkdir initramfs
         cd initramfs
         zcat ../initramfs-virt | sudo cpio -idmv
@@ -346,7 +346,7 @@ jobs:
             return await new Blob(blobs).arrayBuffer();
         }
 
-        const count = 11; // number of parts
+        const count = 21; // number of parts
 
         const parts = Array.from(
             { length: count },
