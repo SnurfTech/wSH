@@ -150,7 +150,7 @@ const parts = Array.from(
     (_, i) => {
         const first = String.fromCharCode(97 + Math.floor(i / 26));
         const second = String.fromCharCode(97 + (i % 26));
-        return `alpine.img.part.${first}${second}`;
+        return `${first}${second}`;
     }
 );
 
