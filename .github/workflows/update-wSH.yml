@@ -45,6 +45,9 @@ jobs:
         mv out/bios.bin ../seabios.bin
         cd ..
         mkdir rootfs
+        cd rootfs
+        zcat ../initramfs-virt | sudo cpio -idmv
+        cd ..
         for i in apks/x86/*.apk; do sudo tar -p --same-owner -P --acls --xattrs -xvf $i -C rootfs; done
         cat << "EOF" | sudo tee rootfs/etc/fstab
         /dev/sda / ext4 defaults 1 1
