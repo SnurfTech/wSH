@@ -375,7 +375,7 @@ jobs:
             cmdline:
                 "rw console=ttyS0,115200 " +
                 "earlyprintk=serial,ttyS0,115200 " +
-                "loglevel=8 root=/dev/sda",
+                "loglevel=7 root=/dev/sda",
 
             net_device: {
                 type: "ne2k",
