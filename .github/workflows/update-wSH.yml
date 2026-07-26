@@ -64,7 +64,8 @@ jobs:
         cd initramfs
         zcat ../initramfs-virt | sudo cpio -idmv
         rm ../initramfs-virt
-        sed -i 's|$MOCK mount -t tmpfs -o "$rootflags" tmpfs "$sysroot"|$MOCK mount -t ext4 -o "$rootflags" /dev/sda "$sysroot"|g' init
+        #sed -i 's|$MOCK mount -t tmpfs -o "$rootflags" tmpfs "$sysroot"|$MOCK mount -t ext4 -o "$rootflags" /dev/sda "$sysroot"|g' init
+        sed -i 's|$MOCK mount -t tmpfs -o "$rootflags" tmpfs "$sysroot"|echo hi|g' init
         find . -print0 | sudo cpio --null -ov --format=newc > ../initramfs-virt
 
     - name: Create bundled.html
