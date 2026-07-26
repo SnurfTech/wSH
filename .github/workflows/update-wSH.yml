@@ -72,7 +72,7 @@ jobs:
         #!/bin/sh
         /sbin/syslogd
         EOF
-        chmod +x /etc/local.d/startup.start
+        sudo chmod +x rootfs/etc/local.d/startup.start
         sudo ln -s /etc/init.d/local rootfs/etc/runlevels/default/local
         sudo dd if=/dev/zero of=alpine.img bs=1M count=100
         sudo mkfs.ext4 alpine.img
