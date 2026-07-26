@@ -126,7 +126,7 @@ body {
 <div id="screen_container"></div>
 
 <script>
-
+(async () => {
 async function loadSplitDisk(prefix, parts) {
     const blobs = [];
 
@@ -363,6 +363,7 @@ term.focus();
 if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("sw.js");
 }
+})();
 </script>
 
 </body>
