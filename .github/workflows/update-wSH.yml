@@ -71,8 +71,51 @@ jobs:
         zcat ../initramfs-virt | sudo cpio -idmv
         rm ../initramfs-virt
         #sed -i 's|$MOCK mount -t tmpfs -o "$rootflags" tmpfs "$sysroot"|$MOCK mount -t ext4 -o "$rootflags" /dev/sda "$sysroot"|g' init
-        perl -pi -e 's/\$\{rootfstype:\+-t\}\s+\$\{rootfstype\}/-t ext4/g' init
-        sed -i 's|"$mountopts"|rw|g' init
+        #perl -pi -e 's/\$\{rootfstype:\+-t\}\s+\$\{rootfstype\}/-t ext4/g' init
+        #sed -i 's|"$mountopts"|rw|g' init
+        cat << EOF > init
+        #!/bin/sh
+
+        # 1. Mount essential virtual filesystems
+        mount -t proc proc /proc
+        mount -t sysfs sysfs /sys
+        mount -t devtmpfs devtmpfs /dev 2>/dev/null || mount -t tmpfs tmpfs /dev
+
+        # Set basic environment PATH
+        export PATH=/usr/bin:/bin:/usr/sbin:/sbin
+
+        echo "=== Initramfs Booting ==="
+
+        # 2. Create target directory for switch_root
+        mkdir -p /newroot
+
+        # 3. Mount /dev/sda as read-write (rw)
+        echo "Mounting /dev/sda..."
+        if ! mount -o rw /dev/sda /newroot; then
+            echo "ERROR: Failed to mount /dev/sda in read-write mode."
+            echo "Starting emergency shell..."
+            exec /bin/sh
+        fi
+
+        # 4. Move virtual filesystems to the new root target
+        mount -o move /proc /newroot/proc
+        mount -o move /sys /newroot/sys
+        mount -o move /dev /newroot/dev
+
+        # 5. Hand over control to the main OS init
+        echo "Switching root to /dev/sda..."
+        if [ -x /newroot/sbin/init ]; then
+            exec switch_root /newroot /sbin/init
+        elif [ -x /newroot/lib/systemd/systemd ]; then
+            exec switch_root /newroot /lib/systemd/systemd
+        else
+            exec switch_root /newroot /init
+        fi
+
+        # Emergency fallback if switch_root fails or init is missing
+        echo "ERROR: Unable to execute init process in /dev/sda."
+        exec /bin/sh
+        EOF
         find . -print0 | sudo cpio --null -ov --format=newc > ../initramfs-virt
 
     - name: Create bundled.html
