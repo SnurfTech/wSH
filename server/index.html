@@ -126,6 +126,36 @@ body {
 <div id="screen_container"></div>
 
 <script>
+
+async function loadSplitDisk(prefix, parts) {
+    const blobs = [];
+
+    for (const suffix of parts) {
+        const response = await fetch(prefix + suffix);
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch ${prefix + suffix}`);
+        }
+
+        blobs.push(await response.blob());
+    }
+
+    return await new Blob(blobs).arrayBuffer();
+}
+
+const count = 21; // number of parts
+
+const parts = Array.from(
+    { length: count },
+    (_, i) => {
+        const first = String.fromCharCode(97 + Math.floor(i / 26));
+        const second = String.fromCharCode(97 + (i % 26));
+        return `alpine.img.part.${first}${second}`;
+    }
+);
+
+const disk = await loadSplitDisk("alpine.img.part.", parts);
+
 const term = new Terminal({
     cursorBlink: true,
     convertEol: true,
