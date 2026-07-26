@@ -358,6 +358,7 @@ jobs:
         );
 
         const disk = await loadSplitDisk("alpine.img.part.", parts);
+        })();
         
         const term = new Terminal({
             cursorBlink: true,
@@ -566,7 +567,6 @@ jobs:
         if ("serviceWorker" in navigator) {
             navigator.serviceWorker.register("sw.js");
         }
-        })();
         </script>
 
         </body>
