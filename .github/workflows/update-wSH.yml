@@ -148,6 +148,8 @@ jobs:
         [ -n "$KOPT_nbd" ] && modprobe -q nbd max_part=8 2>/dev/null 
         [ -n "$KOPT_aoe" ] && modprobe aoe 2>/dev/null 
 
+        nlplug-findfs -p /bin/mdev /dev/sda
+
         # 3. Create target directory and mount /dev/sda as read-write (rw)
         mkdir -p /newroot
 
