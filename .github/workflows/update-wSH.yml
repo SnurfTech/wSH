@@ -74,13 +74,14 @@ jobs:
         EOF
         sudo chmod +x rootfs/etc/local.d/startup.start
         sudo ln -s /etc/init.d/local rootfs/etc/runlevels/default/local
-        sudo dd if=/dev/zero of=alpine.img bs=1M count=100
+        sudo dd if=/dev/zero of=alpine.img bs=1M count=1024
         sudo mkfs.ext4 alpine.img
         mkdir /tmp/hda-mount
         sudo mount -o loop alpine.img /tmp/hda-mount
         sudo cp -a rootfs/. /tmp/hda-mount/
         sudo umount /tmp/hda-mount
         rmdir /tmp/hda-mount
+        split -b 95M alpine.img alpine.img.part.
         mkdir initramfs
         cd initramfs
         zcat ../initramfs-virt | sudo cpio -idmv
@@ -328,6 +329,36 @@ jobs:
         <div id="screen_container"></div>
 
         <script>
+
+        async function loadSplitDisk(prefix, parts) {
+            const blobs = [];
+
+            for (const suffix of parts) {
+                const response = await fetch(prefix + suffix);
+
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch ${prefix + suffix}`);
+                }
+
+                blobs.push(await response.blob());
+            }
+
+            return await new Blob(blobs).arrayBuffer();
+        }
+
+        const count = 11; // number of parts
+
+        const parts = Array.from(
+            { length: count },
+            (_, i) => {
+                const first = String.fromCharCode(97 + Math.floor(i / 26));
+                const second = String.fromCharCode(97 + (i % 26));
+                return `alpine.hda.part.${first}${second}`;
+            }
+        );
+
+        const disk = await loadSplitDisk("alpine.img.part.", parts);
+        
         const term = new Terminal({
             cursorBlink: true,
             convertEol: true,
@@ -610,7 +641,7 @@ jobs:
         mv wSH/*.js server/
         mv wSH/*.bin server/
         mv wSH/*-virt server/
-        mv wSH/alpine.img server/
+        mv wSH/alpine.img.part.* server/
         mv wSH/xterm.css server/
         mv wSH/v86.wasm server/
 
