@@ -204,6 +204,11 @@ if (!disk) {
     console.log("Loaded disk from IndexedDB.");
 }
 
+window.disk = disk;
+window.saveDisk = saveDisk;
+window.loadSavedDisk = loadSavedDisk;
+window.openDB = openDB;
+
 const term = new Terminal({
     cursorBlink: true,
     convertEol: true,
@@ -260,6 +265,8 @@ const emulator = new V86({
 
     autostart: true
 });
+
+window.emulator = emulator;
 
 /* Serial output */
 emulator.add_listener("serial0-output-byte", function(b) {
