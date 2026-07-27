@@ -363,11 +363,29 @@ jobs:
 
             return new Promise((resolve, reject) => {
                 const tx = db.transaction("data", "readwrite");
+                const store = tx.objectStore("data");
 
-                tx.objectStore("data").put(buffer, "disk");
+                const req = store.put(buffer, "disk");
 
-                tx.oncomplete = resolve;
-                tx.onerror = () => reject(tx.error);
+                req.onsuccess = () => console.log("put success");
+                req.onerror = e => {
+                    console.error("put error:", req.error);
+                };
+
+                tx.oncomplete = () => {
+                    console.log("transaction complete");
+                    resolve();
+                };
+
+                tx.onerror = () => {
+                    console.error("transaction error:", tx.error);
+                    reject(tx.error);
+                };
+
+                tx.onabort = () => {
+                    console.error("transaction aborted:", tx.error);
+                    reject(tx.error);
+                };
             });
         }
         
