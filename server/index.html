@@ -127,6 +127,47 @@ body {
 
 <script>
 (async () => {
+
+async function openDB() {
+    return new Promise((resolve, reject) => {
+        const req = indexedDB.open("wSH", 1);
+
+        req.onupgradeneeded = () => {
+            req.result.createObjectStore("data");
+        };
+
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+async function loadSavedDisk() {
+    const db = await openDB();
+
+    return new Promise((resolve, reject) => {
+        const req = db
+            .transaction("data")
+            .objectStore("data")
+            .get("disk");
+
+        req.onsuccess = () => resolve(req.result ?? null);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+async function saveDisk(buffer) {
+    const db = await openDB();
+
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction("data", "readwrite");
+
+        tx.objectStore("data").put(buffer, "disk");
+
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+    });
+}
+
 async function loadSplitDisk(prefix, parts) {
     const blobs = [];
 
@@ -154,7 +195,14 @@ const parts = Array.from(
     }
 );
 
-const disk = await loadSplitDisk("alpine.img.part.", parts);
+let disk = await loadSavedDisk();
+
+if (!disk) {
+    console.log("Loading base disk...");
+    disk = await loadSplitDisk("alpine.img.part.", parts);
+} else {
+    console.log("Loaded disk from IndexedDB.");
+}
 
 const term = new Terminal({
     cursorBlink: true,
