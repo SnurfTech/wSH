@@ -105,6 +105,7 @@ body {
 <body>
 
 <div id="modifier-bar">
+    <button data-key="SAVE">Save</button>
     <button data-key="ESC">Esc</button>
     <button data-key="CTRL">Ctrl</button>
     <button data-key="ALT">Alt</button>
@@ -127,6 +128,11 @@ body {
 
 <script>
 (async () => {
+
+if (navigator.storage?.persist) {
+    const granted = await navigator.storage.persist();
+    console.log("Persistent storage:", granted);
+}
 
 async function openDB() {
     return new Promise((resolve, reject) => {
@@ -155,7 +161,10 @@ async function loadSavedDisk() {
     });
 }
 
-async function saveDisk(buffer) {
+async function saveDisk() {
+    const buffer =
+        emulator.v86.cpu.devices.ide.primary.master.buffer.buffer.slice(0);
+
     const db = await openDB();
 
     return new Promise((resolve, reject) => {
@@ -165,24 +174,18 @@ async function saveDisk(buffer) {
         const req = store.put(buffer, "disk");
 
         req.onsuccess = () => console.log("put success");
-        req.onerror = e => {
-            console.error("put error:", req.error);
+
+        req.onerror = () => {
+            console.error(req.error);
         };
 
         tx.oncomplete = () => {
-            console.log("transaction complete");
+            console.log("disk saved");
             resolve();
         };
 
-        tx.onerror = () => {
-            console.error("transaction error:", tx.error);
-            reject(tx.error);
-        };
-
-        tx.onabort = () => {
-            console.error("transaction aborted:", tx.error);
-            reject(tx.error);
-        };
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error);
     });
 }
 
@@ -223,7 +226,6 @@ if (!disk) {
 }
 
 window.disk = disk;
-window.saveDisk = saveDisk;
 window.loadSavedDisk = loadSavedDisk;
 window.openDB = openDB;
 
@@ -285,6 +287,7 @@ const emulator = new V86({
 });
 
 window.emulator = emulator;
+window.saveDisk = saveDisk;
 
 /* Serial output */
 emulator.add_listener("serial0-output-byte", function(b) {
@@ -300,6 +303,23 @@ document.querySelectorAll("#modifier-bar button").forEach(button => {
         const key = button.dataset.key;
 
         switch (key) {
+            case "SAVE":
+                (async () => {
+                    button.disabled = true;
+                    button.textContent = "Saving...";
+
+                    try {
+                        await saveDisk();
+                        button.textContent = "Saved!";
+                    } finally {
+                        setTimeout(() => {
+                            button.disabled = false;
+                            button.textContent = "Save";
+                        }, 1000);
+                    }
+                })();
+                break;
+                
             case "ESC":
                 emulator.serial0_send("\x1b");
                 break;
