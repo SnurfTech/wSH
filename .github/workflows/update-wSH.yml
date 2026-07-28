@@ -475,7 +475,7 @@ jobs:
 
         async function flushFilesystem()
         {
-            emulator.serial1_send("sync && echo __SAVE_DONE__\n");
+            serial1_send("sync && echo __SAVE_DONE__\n");
 
             await waitForSaveSync();
         }
@@ -581,8 +581,10 @@ jobs:
         window.saveDisk = saveDisk;
 
         window.serial1_send = function(data) {
+            const bus = emulator.v86.cpu.devices.uart1.bus.pair;
+
             for (const c of data) {
-                emulator.v86.bus.send("serial1-input", c.charCodeAt(0));
+                bus.send("serial1-input", c.charCodeAt(0));
             }
         };
 
@@ -648,6 +650,7 @@ jobs:
                                 button.textContent = "Syncing...";
 
                                 await flushFilesystem();
+                                await new Promise(r => setTimeout(r, 100));
 
                                 button.textContent = "Saving...";
 
