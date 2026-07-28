@@ -580,6 +580,12 @@ jobs:
         window.emulator = emulator;
         window.saveDisk = saveDisk;
 
+        window.serial1_send = function(data) {
+            for (const c of data) {
+                emulator.v86.bus.send("serial1-input", c.charCodeAt(0));
+            }
+        };
+
         const saveOverlay = document.getElementById("save-overlay");
 
         function showSaveOverlay() {
@@ -590,9 +596,15 @@ jobs:
             saveOverlay.style.display = "none";
         }
 
-        /* Serial output */
+        /* Main terminal output (ttyS0) */
         emulator.add_listener("serial0-output-byte", function(b) {
             term.write(String.fromCharCode(b));
+        });
+
+
+        /* Save/control serial output (ttyS1) */
+        emulator.add_listener("serial1-output-byte", function(b) {
+            console.log("SERIAL1:", String.fromCharCode(b));
         });
 
         let saveWaiter = null;
