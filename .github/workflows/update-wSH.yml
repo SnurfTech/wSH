@@ -573,7 +573,8 @@ jobs:
                 relay_url: "wss://relay.widgetry.org/"
             },
 
-            autostart: true
+            autostart: true,
+            uart1: true
         });
 
         window.emulator = emulator;
