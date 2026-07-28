@@ -353,40 +353,66 @@ jobs:
         async function loadSavedDisk() {
             const db = await openDB();
 
-            return new Promise((resolve, reject) => {
-                const req = db
-                    .transaction("data")
-                    .objectStore("data")
-                    .get("disk");
+            const tx = db.transaction("data");
+            const store = tx.objectStore("data");
 
-                req.onsuccess = () => resolve(req.result ?? null);
-                req.onerror = () => reject(req.error);
+            const count = await new Promise((resolve, reject) => {
+                const r = store.get("disk-count");
+                r.onsuccess = () => resolve(r.result ?? null);
+                r.onerror = () => reject(r.error);
             });
+
+            if (count === null) return null;
+
+            const parts = [];
+
+            for (let i = 0; i < count; i++) {
+                const chunk = await new Promise((resolve, reject) => {
+                    const r = store.get("disk-" + i);
+                    r.onsuccess = () => resolve(r.result);
+                    r.onerror = () => reject(r.error);
+                });
+
+                parts.push(chunk);
+            }
+
+            return await new Blob(parts).arrayBuffer();
         }
 
+        const CHUNK_SIZE = 50 * 1024 * 1024;
+
         async function saveDisk() {
-            const buffer =
-                emulator.v86.cpu.devices.ide.primary.master.buffer.buffer.slice(0);
+            const src = emulator.v86.cpu.devices.ide.primary.master.buffer.buffer;
 
             const db = await openDB();
+            const tx = db.transaction("data", "readwrite");
+            const store = tx.objectStore("data");
+
+            const oldCount = await new Promise((resolve, reject) => {
+                const r = store.get("disk-count");
+                r.onsuccess = () => resolve(r.result ?? 0);
+                r.onerror = () => reject(r.error);
+            });
+
+            for(let i = 0; i < oldCount; i++) {
+                store.delete("disk-" + i);
+            }
+
+            const count = Math.ceil(src.byteLength / CHUNK_SIZE);
+
+            store.put(count, "disk-count");
+
+            for(let i = 0; i < count; i++) {
+                const start = i * CHUNK_SIZE;
+                const end = Math.min(start + CHUNK_SIZE, src.byteLength);
+
+                const chunk = src.slice(start, end);
+
+                store.put(chunk, "disk-" + i);
+            }
 
             return new Promise((resolve, reject) => {
-                const tx = db.transaction("data", "readwrite");
-                const store = tx.objectStore("data");
-
-                const req = store.put(buffer, "disk");
-
-                req.onsuccess = () => console.log("put success");
-
-                req.onerror = () => {
-                    console.error(req.error);
-                };
-
-                tx.oncomplete = () => {
-                    console.log("disk saved");
-                    resolve();
-                };
-
+                tx.oncomplete = resolve;
                 tx.onerror = () => reject(tx.error);
                 tx.onabort = () => reject(tx.error);
             });
@@ -428,7 +454,6 @@ jobs:
             console.log("Loaded disk from IndexedDB.");
         }
 
-        window.disk = disk;
         window.loadSavedDisk = loadSavedDisk;
         window.openDB = openDB;
         
@@ -514,12 +539,16 @@ jobs:
                             try {
                                 await saveDisk();
                                 button.textContent = "Saved!";
-                            } finally {
-                                setTimeout(() => {
-                                    button.disabled = false;
-                                    button.textContent = "Save";
-                                }, 1000);
                             }
+                            catch(e) {
+                                console.error(e);
+                                button.textContent = "Failed";
+                            }
+
+                            setTimeout(() => {
+                                button.disabled = false;
+                                button.textContent = "Save";
+                            }, 1500);
                         })();
                         break;
                         
