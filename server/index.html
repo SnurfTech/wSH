@@ -124,6 +124,36 @@ body {
 </div>
 
 <div id="terminal"></div>
+<div id="save-overlay"
+style="
+position:fixed;
+left:0;
+top:0;
+right:0;
+bottom:0;
+display:none;
+justify-content:center;
+align-items:center;
+background:rgba(0,0,0,.45);
+backdrop-filter:blur(4px);
+z-index:100000;
+touch-action:none;
+pointer-events:all;
+user-select:none;
+">
+
+<div style="
+padding:30px;
+border-radius:12px;
+background:rgba(30,30,30,.85);
+font-size:28px;
+color:white;
+font-family:sans-serif;
+">
+Saving...
+</div>
+
+</div>
 <div id="screen_container"></div>
 
 <script>
@@ -213,6 +243,37 @@ async function saveDisk() {
         tx.onerror = () => reject(tx.error);
         tx.onabort = () => reject(tx.error);
     });
+}
+
+function waitForSaveSync()
+{
+    return new Promise(resolve =>
+    {
+        let buffer = "";
+
+        saveWaiter = function(ch)
+        {
+            buffer += ch;
+
+            if(buffer.includes("__SAVE_DONE__"))
+            {
+                saveWaiter = null;
+                resolve();
+            }
+
+            if(buffer.length > 200)
+            {
+                buffer = buffer.slice(-200);
+            }
+        };
+    });
+}
+
+async function flushFilesystem()
+{
+    emulator.serial1_send("sync && echo __SAVE_DONE__\n");
+
+    await waitForSaveSync();
 }
 
 async function loadSplitDisk(prefix, parts) {
@@ -314,13 +375,37 @@ const emulator = new V86({
 window.emulator = emulator;
 window.saveDisk = saveDisk;
 
+const saveOverlay = document.getElementById("save-overlay");
+
+function showSaveOverlay() {
+    saveOverlay.style.display = "flex";
+}
+
+function hideSaveOverlay() {
+    saveOverlay.style.display = "none";
+}
+
 /* Serial output */
 emulator.add_listener("serial0-output-byte", function(b) {
     term.write(String.fromCharCode(b));
 });
 
+let saveWaiter = null;
+
+emulator.add_listener("serial1-output-byte", function(b) {
+
+    const c = String.fromCharCode(b);
+
+    if(saveWaiter)
+    {
+        saveWaiter(c);
+    }
+
+});
+
 let ctrlHeld = false;
 let altHeld = false;
+let saveInProgress = false;
 
 /* Extra buttons */
 document.querySelectorAll("#modifier-bar button").forEach(button => {
@@ -329,24 +414,54 @@ document.querySelectorAll("#modifier-bar button").forEach(button => {
 
         switch (key) {
             case "SAVE":
+
                 (async () => {
+
+                    // ADD THESE LINES HERE
+                    if (saveInProgress)
+                        return;
+
+                    saveInProgress = true;
+
                     button.disabled = true;
-                    button.textContent = "Saving...";
+
+                    showSaveOverlay();
 
                     try {
-                        await saveDisk();
+                        button.textContent = "Syncing...";
+
+                        await flushFilesystem();
+
+                        button.textContent = "Saving...";
+
+                        emulator.stop();
+
+                        try {
+                            await saveDisk();
+                        } finally {
+                            emulator.run();
+                        }
+
                         button.textContent = "Saved!";
                     }
-                    catch(e) {
+                    catch (e) {
                         console.error(e);
                         button.textContent = "Failed";
                     }
+                    finally {
+                        // ALSO MOVE THIS HERE
+                        saveInProgress = false;
 
-                    setTimeout(() => {
-                        button.disabled = false;
-                        button.textContent = "Save";
-                    }, 1500);
+                        hideSaveOverlay();
+
+                        setTimeout(() => {
+                            button.disabled = false;
+                            button.textContent = "Save";
+                        }, 1000);
+                    }
+
                 })();
+
                 break;
                 
             case "ESC":
