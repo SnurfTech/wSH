@@ -96,9 +96,9 @@ jobs:
         cd initramfs
         zcat ../initramfs-virt | sudo cpio -idmv
         rm ../initramfs-virt
-        cd ..
-        sudo ./apk.static --root initramfs --initdb --arch x86 --repository https://dl-cdn.alpinelinux.org/alpine/v3.24/main --allow-untrusted add linux-virt
-        cd -
+        #cd ..
+        #sudo ./apk.static --root initramfs --initdb --arch x86 --repository https://dl-cdn.alpinelinux.org/alpine/v3.24/main --allow-untrusted add linux-virt
+        #cd -
         #sed -i 's|$MOCK mount -t tmpfs -o "$rootflags" tmpfs "$sysroot"|$MOCK mount -t ext4 -o "$rootflags" /dev/sda "$sysroot"|g' init
         #perl -pi -e 's/\$\{rootfstype:\+-t\}\s+\$\{rootfstype\}/-t ext4/g' init
         #sed -i 's|"$mountopts"|rw|g' init
