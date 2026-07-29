@@ -193,13 +193,13 @@ jobs:
 
         # 5. Hand over control to the main OS init
         echo "Switching root to /dev/sda..."
-        if [ -x /newroot/sbin/init ]; then
-            #exec switch_root /newroot /sbin/init
-        elif [ -x /newroot/lib/systemd/systemd ]; then
-            #exec switch_root /newroot /lib/systemd/systemd
-        else
-            #exec switch_root /newroot /init
-        fi
+        #if [ -x /newroot/sbin/init ]; then
+        #    exec switch_root /newroot /sbin/init
+        #elif [ -x /newroot/lib/systemd/systemd ]; then
+        #    exec switch_root /newroot /lib/systemd/systemd
+        #else
+        #    exec switch_root /newroot /init
+        #fi
 
         # Emergency fallback
         echo "ERROR: Unable to execute init process in /dev/sda."
