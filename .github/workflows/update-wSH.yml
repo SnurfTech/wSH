@@ -65,7 +65,7 @@ jobs:
         EOF
         wget https://gitlab.alpinelinux.org/api/v4/projects/5/packages/generic/v2.14.6/x86_64/apk.static
         chmod +x apk.static
-        sudo ./apk.static --root rootfs --initdb --arch x86 --repository https://dl-cdn.alpinelinux.org/alpine/v3.24/main --allow-untrusted add openrc mdevd-openrc agetty vim nano wget curl bash build-base ca-certificates sudo util-linux alpine-conf
+        sudo ./apk.static --root rootfs --initdb --arch x86 --repository https://dl-cdn.alpinelinux.org/alpine/v3.24/main --allow-untrusted add openrc mdevd-openrc agetty vim nano wget curl bash build-base ca-certificates sudo util-linux alpine-conf e2fsprogs
         sudo ln -s /etc/init.d/mdevd rootfs/etc/runlevels/sysinit/mdevd
         sudo ln -s /etc/init.d/mdevd-init rootfs/etc/runlevels/sysinit/mdevd-init
         sudo ln -s /etc/init.d/hostname rootfs/etc/runlevels/boot/hostname
@@ -131,45 +131,45 @@ jobs:
 
         echo "Loading modules..."
 
-        # Load memdisk drivers if requested [cite: 86, 87]
+        # Load memdisk drivers if requested
         if [ "$KOPT_memdisk" = "yes" ]; then
             modprobe phram phram=memdisk,$(memdiskfind) 2>/dev/null 
             modprobe mtdblock 2>/dev/null 
         fi
 
-        # Load S390x mainframe drivers if requested [cite: 91, 92, 93, 94, 95]
+        # Load S390x mainframe drivers if requested
         if [ -n "$KOPT_zfcp" ]; then
             modprobe zfcp 2>/dev/null 
         fi
 
         if [ -n "$KOPT_dasd" ]; then
             for mod in dasd_mod dasd_eckd_mod dasd_fba_mod; do 
-                modprobe $mod 2>/dev/null [cite: 93]
+                modprobe $mod 2>/dev/null
             done
         fi
 
-        if [ "${KOPT_s390x_net%%,*}" = "qeth_l2" ]; then [cite: 94]
+        if [ "${KOPT_s390x_net%%,*}" = "qeth_l2" ]; then
             for mod in qeth qeth_l2 qeth_l3; do 
-                modprobe $mod 2>/dev/null [cite: 95]
+                modprobe $mod 2>/dev/null
             done
         fi
 
         # Load standard storage, filesystem, and kernel-command-line modules 
         modprobe -a $(echo "$KOPT_modules $KOPT_rootfstype" | tr ',' ' ') loop squashfs simpledrm 2>/dev/null 
 
-        # Read and load modules listed in /etc/modules [cite: 96, 97, 98]
-        if [ -f /etc/modules ]; then [cite: 96, 97]
+        # Read and load modules listed in /etc/modules
+        if [ -f /etc/modules ]; then
             sed 's/\#.*//g' < /etc/modules | while read -r module args; do 
-                [ -n "$module" ] && modprobe -q $module $args [cite: 98]
+                [ -n "$module" ] && modprobe -q $module $args
             done
         fi
 
         # VMware storage & CD-ROM compatibility driver workaround 
         if grep -q VMware /sys/devices/virtual/dmi/id/sys_vendor 2>/dev/null; then 
-            modprobe -a ata_piix mptspi sr-mod 2>/dev/null [cite: 99]
+            modprobe -a ata_piix mptspi sr-mod 2>/dev/null
         fi
 
-        # Load optional network and block device tunnel drivers [cite: 54, 56, 102, 104, 106]
+        # Load optional network and block device tunnel drivers
         [ -n "$KOPT_wireguard" ] && modprobe -q wireguard 2>/dev/null 
         [ -n "$KOPT_nbd" ] && modprobe -q nbd max_part=8 2>/dev/null 
         [ -n "$KOPT_aoe" ] && modprobe aoe 2>/dev/null 
@@ -194,11 +194,11 @@ jobs:
         # 5. Hand over control to the main OS init
         echo "Switching root to /dev/sda..."
         if [ -x /newroot/sbin/init ]; then
-            exec switch_root /newroot /sbin/init
+            #exec switch_root /newroot /sbin/init
         elif [ -x /newroot/lib/systemd/systemd ]; then
-            exec switch_root /newroot /lib/systemd/systemd
+            #exec switch_root /newroot /lib/systemd/systemd
         else
-            exec switch_root /newroot /init
+            #exec switch_root /newroot /init
         fi
 
         # Emergency fallback
