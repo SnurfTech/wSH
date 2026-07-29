@@ -65,7 +65,7 @@ jobs:
         EOF
         wget https://gitlab.alpinelinux.org/api/v4/projects/5/packages/generic/v2.14.6/x86_64/apk.static
         chmod +x apk.static
-        sudo ./apk.static --root rootfs --initdb --arch x86 --repository https://dl-cdn.alpinelinux.org/alpine/v3.24/main --allow-untrusted add openrc mdevd-openrc agetty vim nano wget curl bash build-base ca-certificates sudo util-linux
+        sudo ./apk.static --root rootfs --initdb --arch x86 --repository https://dl-cdn.alpinelinux.org/alpine/v3.24/main --allow-untrusted add openrc mdevd-openrc agetty vim nano wget curl bash build-base ca-certificates sudo util-linux alpine-conf
         sudo ln -s /etc/init.d/mdevd rootfs/etc/runlevels/sysinit/mdevd
         sudo ln -s /etc/init.d/mdevd-init rootfs/etc/runlevels/sysinit/mdevd-init
         sudo ln -s /etc/init.d/hostname rootfs/etc/runlevels/boot/hostname
@@ -75,6 +75,15 @@ jobs:
         EOF
         sudo chmod +x rootfs/etc/local.d/startup.start
         sudo ln -s /etc/init.d/local rootfs/etc/runlevels/default/local
+        #setup wifi
+        cat << EOF | sudo tee rootfs/etc/network/interfaces
+        auto lo
+        iface lo inet loopback
+
+        auto eth0
+        iface eth0 inet dhcp
+        EOF
+        sudo ln -s /etc/init.d/networking rootfs/etc/runlevels/default/networking
         sudo dd if=/dev/zero of=alpine.img bs=1M count=1024
         sudo mkfs.ext4 alpine.img
         mkdir /tmp/hda-mount
@@ -845,7 +854,6 @@ jobs:
 
             "./vmlinuz-virt",
             "./initramfs-virt",
-            "./alpine.img",
 
             "./xterm.js",
             "./xterm.css",
