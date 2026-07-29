@@ -84,9 +84,6 @@ jobs:
         iface eth0 inet dhcp
         EOF
         sudo ln -s /etc/init.d/networking rootfs/etc/runlevels/default/networking
-        cat << EOF | sudo tee -a rootfs/etc/modules
-        ne2k-pci
-        EOF
         sudo dd if=/dev/zero of=alpine.img bs=1M count=1024
         sudo mkfs.ext4 alpine.img
         mkdir /tmp/hda-mount
@@ -207,6 +204,9 @@ jobs:
         # Emergency fallback
         echo "ERROR: Unable to execute init process in /dev/sda."
         exec /bin/sh
+        EOF
+        cat << EOF | sudo tee -a etc/modules
+        ne2k-pci
         EOF
         find . -print0 | sudo cpio --null -ov --format=newc > ../initramfs-virt
 
