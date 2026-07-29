@@ -12,7 +12,6 @@ const FILES = [
 
     "./vmlinuz-virt",
     "./initramfs-virt",
-    "./alpine.img",
 
     "./xterm.js",
     "./xterm.css",
