@@ -209,6 +209,7 @@ jobs:
         exec /bin/sh
         EOF
         cat << EOF | sudo tee -a etc/modules
+        8390
         ne2k-pci
         EOF
         find . -print0 | sudo cpio --null -ov --format=newc > ../initramfs-virt
