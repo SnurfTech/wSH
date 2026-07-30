@@ -139,6 +139,9 @@ jobs:
         make -j$(nproc) vmlinux modules_prepare
         make -j$(nproc) modules
 
+        pwd
+        ls -a
+
         mkdir ../../initramfs/usr/lib/modules/$PKGVER-0-virt/kernel/drivers/net/ethernet/8390
         cp drivers/net/ethernet/8390/ne2k-pci.ko ../../initramfs/usr/lib/modules/$PKGVER-0-virt/kernel/drivers/net/ethernet/8390
         cp drivers/net/ethernet/8390/8390.ko ../../initramfs/usr/lib/modules/$PKGVER-0-virt/kernel/drivers/net/ethernet/8390
