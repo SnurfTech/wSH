@@ -13,7 +13,12 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Create Build Folder and Set Up Dependencies
+    - name: Download Dependencies
+      run: |
+        sudo apt update
+        sudo apt install gcc-i686-linux-gnu make bc flex bison libelf-dev libssl-dev dwarves jq build-essential bison cpio rsync xz-utils wget -y
+
+    - name: Build Stuff
       run: |
         mkdir wSH
         cd wSH
@@ -96,9 +101,44 @@ jobs:
         cd initramfs
         zcat ../initramfs-virt | sudo cpio -idmv
         rm ../initramfs-virt
-        #cd ..
-        #sudo ./apk.static --root initramfs --initdb --arch x86 --repository https://dl-cdn.alpinelinux.org/alpine/v3.24/main --allow-untrusted add linux-virt
-        #cd -
+        #building ne2k-pci and dependencies
+        mkdir linux
+        cd linux
+
+        curl -s \
+        "https://api.github.com/repos/alpinelinux/aports/contents/main/linux-lts?ref=954487c7d11ef901fdf7350f9fa8638e7a45df4e" \
+        | jq -r '.[] | .download_url' \
+        | xargs -n1 wget
+
+        export PKGVER="$(cat APKBUILD | grep -oP "pkgver=.*" | cut -d '=' -f2)"
+        export KERNVER=${PKGVER%.*}
+        export LINUXSRC="https://cdn.kernel.org/pub/linux/kernel/v${PKGVER%%.*}.x/linux-$KERNVER.tar.xz"
+        export LINUXPATCH="https://cdn.kernel.org/pub/linux/kernel/v${PKGVER%%.*}.x/patch-$PKGVER.xz"
+        wget $LINUXSRC
+        wget $LINUXPATCH
+        tar -xf linux-$KERNVER.tar.xz
+        cd linux-$KERNVER
+        xzcat ../patch-$PKGVER.xz | patch -p1
+        cp ../virt.x86.config .config
+        make allnoconfig
+        #scripts/config --enable MODULES
+        #scripts/config --enable PCI
+        #scripts/config --enable NET
+        #scripts/config --enable NETDEVICES
+        scripts/config --enable ETHERNET
+        #scripts/config --enable HAS_IOPORT
+        scripts/config --module LIB8390
+        scripts/config --module NE2K_PCI
+        make olddefconfig
+        make -j$(nproc) vmlinux modules_prepare
+        make -j$(nproc) modules
+
+        mkdir ../../initramfs/lib/modules/$PKGVER-0-virt/kernel/drivers/net/ethernet/8390
+        cp drivers/net/ethernet/8390/ne2k-pci.ko ../../initramfs/lib/modules/$PKGVER-0-virt/kernel/drivers/net/ethernet/8390
+        cp drivers/net/ethernet/8390/8390.ko ../../initramfs/lib/modules/$PKGVER-0-virt/kernel/drivers/net/ethernet/8390
+        depmod -a -b ../../initramfs $PKGVER-0-virt
+        
+        cd ../../initramfs
         #sed -i 's|$MOCK mount -t tmpfs -o "$rootflags" tmpfs "$sysroot"|$MOCK mount -t ext4 -o "$rootflags" /dev/sda "$sysroot"|g' init
         #perl -pi -e 's/\$\{rootfstype:\+-t\}\s+\$\{rootfstype\}/-t ext4/g' init
         #sed -i 's|"$mountopts"|rw|g' init
