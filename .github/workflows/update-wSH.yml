@@ -138,10 +138,10 @@ jobs:
         make -j$(nproc) vmlinux modules_prepare
         make -j$(nproc) modules
 
-        mkdir -p ../../initramfs/usr/lib/modules/$PKGVER-0-virt/kernel/drivers/net/ethernet/8390
-        cp drivers/net/ethernet/8390/ne2k-pci.ko ../../initramfs/usr/lib/modules/$PKGVER-0-virt/kernel/drivers/net/ethernet/8390
-        cp drivers/net/ethernet/8390/8390.ko ../../initramfs/usr/lib/modules/$PKGVER-0-virt/kernel/drivers/net/ethernet/8390
-        depmod -a -b ../../initramfs $PKGVER-0-virt
+        sudo mkdir -p ../../initramfs/usr/lib/modules/$PKGVER-0-virt/kernel/drivers/net/ethernet/8390
+        sudo cp drivers/net/ethernet/8390/ne2k-pci.ko ../../initramfs/usr/lib/modules/$PKGVER-0-virt/kernel/drivers/net/ethernet/8390
+        sudo cp drivers/net/ethernet/8390/8390.ko ../../initramfs/usr/lib/modules/$PKGVER-0-virt/kernel/drivers/net/ethernet/8390
+        sudo depmod -a -b ../../initramfs $PKGVER-0-virt
         
         cd ../../initramfs
         #sed -i 's|$MOCK mount -t tmpfs -o "$rootflags" tmpfs "$sysroot"|$MOCK mount -t ext4 -o "$rootflags" /dev/sda "$sysroot"|g' init
