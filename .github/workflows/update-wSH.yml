@@ -122,37 +122,21 @@ jobs:
         export LINUXPATCH="https://cdn.kernel.org/pub/linux/kernel/v${PKGVER%%.*}.x/patch-$PKGVER.xz"
         wget $LINUXSRC
         wget $LINUXPATCH
-        tar -xf linux-$KERNVER.tar.xz
+        tar -xvf linux-$KERNVER.tar.xz
         cd linux-$KERNVER
         xzcat ../patch-$PKGVER.xz | patch -p1
         cp ../virt.x86.config .config
         make allnoconfig
-        #scripts/config --enable MODULES
-        #scripts/config --enable PCI
-        #scripts/config --enable NET
-        #scripts/config --enable NETDEVICES
+        scripts/config --enable MODULES
+        scripts/config --enable PCI
+        scripts/config --enable NET
+        scripts/config --enable NETDEVICES
         scripts/config --enable ETHERNET
-        #scripts/config --enable HAS_IOPORT
         scripts/config --module LIB8390
         scripts/config --module NE2K_PCI
         make olddefconfig
         make -j$(nproc) vmlinux modules_prepare
         make -j$(nproc) modules
-
-        pwd
-        echo "----"
-        ls
-        echo "----"
-        ls ../../initramfs
-        echo "----"
-        ls drivers
-        echo "----"
-        ls drivers/net
-        echo "----"
-        ls drivers/net/ethernet/
-        echo "----"
-        ls drivers/net/ethernet/8390
-        echo "----"
 
         mkdir ../../initramfs/usr/lib/modules/$PKGVER-0-virt/kernel/drivers/net/ethernet/8390
         cp drivers/net/ethernet/8390/ne2k-pci.ko ../../initramfs/usr/lib/modules/$PKGVER-0-virt/kernel/drivers/net/ethernet/8390
