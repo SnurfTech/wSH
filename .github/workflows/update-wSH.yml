@@ -140,7 +140,11 @@ jobs:
         make -j$(nproc) modules
 
         pwd
-        ls -a
+        ls
+        ls ../../initramfs
+        ls drivers
+        ls drivers/net
+        ls drivers/net/ethernet/
 
         mkdir ../../initramfs/usr/lib/modules/$PKGVER-0-virt/kernel/drivers/net/ethernet/8390
         cp drivers/net/ethernet/8390/ne2k-pci.ko ../../initramfs/usr/lib/modules/$PKGVER-0-virt/kernel/drivers/net/ethernet/8390
