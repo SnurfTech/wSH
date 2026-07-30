@@ -20,14 +20,22 @@ jobs:
 
     - name: Build Stuff
       run: |
+        export APORTS_COMMIT="954487c7d11ef901fdf7350f9fa8638e7a45df4e"
+        export XTERM_ADDON_FIT_VERSION="0.8.0"
+        export XTERM_VERSION="5.3.0"
+        export ALPINEISO="https://dl-cdn.alpinelinux.org/alpine/v3.24/releases/x86/alpine-virt-3.24.1-x86.iso"
+        export ALPINEROOTFS="https://dl-cdn.alpinelinux.org/alpine/v3.24/releases/x86/alpine-minirootfs-3.24.1-x86.tar.gz"
+        export APKSTATIC="https://gitlab.alpinelinux.org/api/v4/projects/5/packages/generic/v2.14.6/x86_64/apk.static"
+        export ALPINEREPO="https://dl-cdn.alpinelinux.org/alpine/v3.24/main"
+
         mkdir wSH
         cd wSH
         wget https://github.com/copy/v86/releases/download/latest/libv86.js
         wget https://github.com/copy/v86/releases/download/latest/v86.wasm
-        wget https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js
-        wget https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js
-        wget https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css
-        wget https://dl-cdn.alpinelinux.org/alpine/v3.24/releases/x86/alpine-virt-3.24.1-x86.iso -O alpine.iso
+        wget https://cdn.jsdelivr.net/npm/xterm-addon-fit@$XTERM_ADDON_FIT_VERSION/lib/xterm-addon-fit.js
+        wget https://cdn.jsdelivr.net/npm/xterm@$XTERM_VERSION/lib/xterm.js
+        wget https://cdn.jsdelivr.net/npm/xterm@$XTERM_VERSION/css/xterm.css
+        wget $ALPINEISO -O alpine.iso
         wget https://github.com/copy/v86/raw/refs/heads/master/bios/vgabios.bin
         sudo apt install p7zip -y
         7z x alpine.iso
@@ -54,7 +62,7 @@ jobs:
         #zcat ../initramfs-virt | sudo cpio -idmv
         #cd ..
         #for i in apks/x86/*.apk; do sudo tar -p --same-owner -P --acls --xattrs -xvf $i -C rootfs; done
-        wget https://dl-cdn.alpinelinux.org/alpine/v3.24/releases/x86/alpine-minirootfs-3.24.1-x86.tar.gz -O alpine.tar.gz
+        wget $ALPINEROOTFS -O alpine.tar.gz
         sudo tar -p --same-owner -P --acls --xattrs -xzvf alpine.tar.gz -C rootfs
         cat << "EOF" | sudo tee rootfs/etc/fstab
         /dev/sda / ext4 defaults 1 1
@@ -68,9 +76,9 @@ jobs:
         You can change this message at any time by editing /etc/motd.
         
         EOF
-        wget https://gitlab.alpinelinux.org/api/v4/projects/5/packages/generic/v2.14.6/x86_64/apk.static
+        wget $APKSTATIC
         chmod +x apk.static
-        sudo ./apk.static --root rootfs --initdb --arch x86 --repository https://dl-cdn.alpinelinux.org/alpine/v3.24/main --allow-untrusted add openrc mdevd-openrc agetty vim nano wget curl bash build-base ca-certificates sudo util-linux alpine-conf e2fsprogs
+        sudo ./apk.static --root rootfs --initdb --arch x86 --repository $ALPINEREPO --allow-untrusted add openrc mdevd-openrc agetty vim nano wget curl bash build-base ca-certificates sudo util-linux alpine-conf e2fsprogs
         sudo ln -s /etc/init.d/mdevd rootfs/etc/runlevels/sysinit/mdevd
         sudo ln -s /etc/init.d/mdevd-init rootfs/etc/runlevels/sysinit/mdevd-init
         sudo ln -s /etc/init.d/hostname rootfs/etc/runlevels/boot/hostname
@@ -105,10 +113,7 @@ jobs:
         mkdir linux
         cd linux
 
-        curl -s \
-        "https://api.github.com/repos/alpinelinux/aports/contents/main/linux-lts?ref=954487c7d11ef901fdf7350f9fa8638e7a45df4e" \
-        | jq -r '.[] | .download_url' \
-        | xargs -n1 wget
+        curl -s "https://api.github.com/repos/alpinelinux/aports/contents/main/linux-lts?ref=$APORTS_COMMIT" | jq -r '.[] | .download_url' | xargs -n1 wget
 
         export PKGVER="$(cat APKBUILD | grep -oP "pkgver=.*" | cut -d '=' -f2)"
         export KERNVER=${PKGVER%.*}
