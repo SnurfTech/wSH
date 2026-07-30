@@ -110,6 +110,7 @@ jobs:
         zcat ../initramfs-virt | sudo cpio -idmv
         rm ../initramfs-virt
         #building ne2k-pci and dependencies
+        cd ..
         mkdir linux
         cd linux
 
