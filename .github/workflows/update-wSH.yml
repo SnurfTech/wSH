@@ -39,7 +39,7 @@ jobs:
         wget https://github.com/copy/v86/raw/refs/heads/master/bios/vgabios.bin
         sudo apt install p7zip -y
         7z x alpine.iso
-        mv boot/vmlinuz-virt .
+        #mv boot/vmlinuz-virt .
         mv boot/initramfs-virt .
         git clone https://github.com/qemu/seabios
         cd seabios
@@ -114,7 +114,8 @@ jobs:
         mkdir linux
         cd linux
 
-        curl -s "https://api.github.com/repos/alpinelinux/aports/contents/main/linux-lts?ref=$APORTS_COMMIT" | jq -r '.[] | .download_url' | xargs -n1 wget
+        curl -s "https://api.github.com/repos/alpinelinux/aports/contents/main/linux-lts" | jq -r '.[] | .download_url' | xargs -n1 wget
+        #curl -s "https://api.github.com/repos/alpinelinux/aports/contents/main/linux-lts?ref=$APORTS_COMMIT" | jq -r '.[] | .download_url' | xargs -n1 wget
 
         export PKGVER="$(cat APKBUILD | grep -oP "pkgver=.*" | cut -d '=' -f2)"
         export KERNVER=${PKGVER%.*}
@@ -125,8 +126,10 @@ jobs:
         tar -xvf linux-$KERNVER.tar.xz
         cd linux-$KERNVER
         xzcat ../patch-$PKGVER.xz | patch -p1
+        for patch in ../*.patch; do
+          patch -p1 < $patch
+        done
         cp ../virt.x86.config .config
-        make allnoconfig
         scripts/config --enable MODULES
         scripts/config --enable PCI
         scripts/config --enable NET
@@ -135,14 +138,15 @@ jobs:
         scripts/config --module LIB8390
         scripts/config --module NE2K_PCI
         make olddefconfig
-        make -j$(nproc) vmlinux modules_prepare
-        make -j$(nproc) modules
+        make -j$(nproc) bzImage modules
 
-        sudo mkdir -p ../../initramfs/usr/lib/modules/$PKGVER-0-virt/kernel/drivers/net/ethernet/8390
-        sudo cp drivers/net/ethernet/8390/ne2k-pci.ko ../../initramfs/usr/lib/modules/$PKGVER-0-virt/kernel/drivers/net/ethernet/8390
-        sudo cp drivers/net/ethernet/8390/8390.ko ../../initramfs/usr/lib/modules/$PKGVER-0-virt/kernel/drivers/net/ethernet/8390
+        sudo rm -rf ../../initramfs/usr/lib/modules/*
+        sudo make modules_install INSTALL_MOD_PATH=../../initramfs/usr
+
         sudo depmod -a -b ../../initramfs $PKGVER-0-virt
-        
+
+        sudo cp arch/x86/boot/bzImage ../../vmlinuz-virt
+
         cd ../../initramfs
         #sed -i 's|$MOCK mount -t tmpfs -o "$rootflags" tmpfs "$sysroot"|$MOCK mount -t ext4 -o "$rootflags" /dev/sda "$sysroot"|g' init
         #perl -pi -e 's/\$\{rootfstype:\+-t\}\s+\$\{rootfstype\}/-t ext4/g' init
