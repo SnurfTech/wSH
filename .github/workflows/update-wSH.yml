@@ -20,7 +20,7 @@ jobs:
 
     - name: Build Stuff
       run: |
-        export APORTS_COMMIT="954487c7d11ef901fdf7350f9fa8638e7a45df4e"
+        #export APORTS_COMMIT="954487c7d11ef901fdf7350f9fa8638e7a45df4e"
         export XTERM_ADDON_FIT_VERSION="0.8.0"
         export XTERM_VERSION="5.3.0"
         export ALPINEISO="https://dl-cdn.alpinelinux.org/alpine/v3.24/releases/x86/alpine-virt-3.24.1-x86.iso"
@@ -143,7 +143,7 @@ jobs:
         sudo rm -rf ../../initramfs/usr/lib/modules/*
         sudo make modules_install INSTALL_MOD_PATH=../../initramfs/usr
 
-        sudo depmod -a -b ../../initramfs/usr $PKGVER-0-virt
+        sudo depmod -a -b ../../initramfs/usr $PKGVER
 
         sudo cp arch/x86/boot/bzImage ../../vmlinuz-virt
 
