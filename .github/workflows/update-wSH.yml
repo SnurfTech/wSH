@@ -96,60 +96,57 @@ jobs:
         iface eth0 inet dhcp
         EOF
         sudo ln -s /etc/init.d/networking rootfs/etc/runlevels/default/networking
-        sudo dd if=/dev/zero of=alpine.img bs=1M count=1024
+        sudo dd if=/dev/zero of=alpine.img bs=1M count=5120
         sudo mkfs.ext4 alpine.img
         mkdir /tmp/hda-mount
         sudo mount -o loop alpine.img /tmp/hda-mount
         sudo cp -a rootfs/. /tmp/hda-mount/
         sudo umount /tmp/hda-mount
         rmdir /tmp/hda-mount
-        split -b 50M alpine.img alpine.img.part.
+        split -b 2G alpine.img alpine.img.part.
         mkdir initramfs
         cd initramfs
         zcat ../initramfs-virt | sudo cpio -idmv
         rm ../initramfs-virt
-        #building ne2k-pci and dependencies
-        cd ..
-        mkdir linux
-        cd linux
+        #building new kernel
+        #cd ..
+        #mkdir linux
+        #cd linux
 
-        curl -s "https://api.github.com/repos/alpinelinux/aports/contents/main/linux-lts" | jq -r '.[] | .download_url' | xargs -n1 wget
-        #curl -s "https://api.github.com/repos/alpinelinux/aports/contents/main/linux-lts?ref=$APORTS_COMMIT" | jq -r '.[] | .download_url' | xargs -n1 wget
+        #curl -s "https://api.github.com/repos/alpinelinux/aports/contents/main/linux-lts" | jq -r '.[] | .download_url' | xargs -n1 wget
 
-        export PKGVER="$(cat APKBUILD | grep -oP "pkgver=.*" | cut -d '=' -f2)"
-        export KERNVER=${PKGVER%.*}
-        export LINUXSRC="https://cdn.kernel.org/pub/linux/kernel/v${PKGVER%%.*}.x/linux-$KERNVER.tar.xz"
-        export LINUXPATCH="https://cdn.kernel.org/pub/linux/kernel/v${PKGVER%%.*}.x/patch-$PKGVER.xz"
-        wget $LINUXSRC
-        wget $LINUXPATCH
-        tar -xvf linux-$KERNVER.tar.xz
-        cd linux-$KERNVER
-        xzcat ../patch-$PKGVER.xz | patch -p1
-        for patch in ../*.patch; do
-          patch -p1 < $patch
-        done
-        cp ../virt.x86.config .config
-        scripts/config --enable MODULES
-        scripts/config --enable PCI
-        scripts/config --enable NET
-        scripts/config --enable NETDEVICES
-        scripts/config --enable ETHERNET
-        scripts/config --module LIB8390
-        scripts/config --module NE2K_PCI
-        make olddefconfig
-        make -j$(nproc) bzImage modules
+        #export PKGVER="$(cat APKBUILD | grep -oP "pkgver=.*" | cut -d '=' -f2)"
+        #export KERNVER=${PKGVER%.*}
+        #export LINUXSRC="https://cdn.kernel.org/pub/linux/kernel/v${PKGVER%%.*}.x/linux-$KERNVER.tar.xz"
+        #export LINUXPATCH="https://cdn.kernel.org/pub/linux/kernel/v${PKGVER%%.*}.x/patch-$PKGVER.xz"
+        #wget $LINUXSRC
+        #wget $LINUXPATCH
+        #tar -xvf linux-$KERNVER.tar.xz
+        #cd linux-$KERNVER
+        #xzcat ../patch-$PKGVER.xz | patch -p1
+        #for patch in ../*.patch; do
+        #  patch -p1 < $patch
+        #done
+        #cp ../virt.x86.config .config
+        #scripts/config --enable MODULES
+        #scripts/config --enable PCI
+        #scripts/config --enable NET
+        #scripts/config --enable NETDEVICES
+        #scripts/config --enable ETHERNET
+        #scripts/config --module LIB8390
+        #scripts/config --module NE2K_PCI
+        #make olddefconfig
+        #make -j$(nproc) bzImage modules
 
-        sudo rm -rf ../../initramfs/usr/lib/modules/*
-        sudo make modules_install INSTALL_MOD_PATH=../../initramfs/usr
+        #sudo rm -rf ../../initramfs/usr/lib/modules/*
+        #sudo make modules_install INSTALL_MOD_PATH=../../initramfs/usr
 
-        sudo depmod -a -b ../../initramfs/usr $PKGVER
+        #sudo depmod -a -b ../../initramfs/usr $PKGVER
 
-        sudo cp arch/x86/boot/bzImage ../../vmlinuz-virt
+        #sudo cp arch/x86/boot/bzImage ../../vmlinuz-virt
 
-        cd ../../initramfs
-        #sed -i 's|$MOCK mount -t tmpfs -o "$rootflags" tmpfs "$sysroot"|$MOCK mount -t ext4 -o "$rootflags" /dev/sda "$sysroot"|g' init
-        #perl -pi -e 's/\$\{rootfstype:\+-t\}\s+\$\{rootfstype\}/-t ext4/g' init
-        #sed -i 's|"$mountopts"|rw|g' init
+        #cd ../../initramfs
+
         cat << EOF | sudo tee init
         #!/bin/sh
 
@@ -560,7 +557,7 @@ jobs:
             return await new Blob(blobs).arrayBuffer();
         }
 
-        const count = 21; // number of parts
+        const count = 3; // number of parts
 
         const parts = Array.from(
             { length: count },
@@ -575,7 +572,7 @@ jobs:
 
         if (!disk) {
             console.log("Loading base disk...");
-            disk = await loadSplitDisk("alpine.img.part.", parts);
+            disk = await loadSplitDisk("https://github.com/SnurfTech/wSH/releases/download/latest/alpine.img.part.", parts);
         } else {
             console.log("Loaded disk from IndexedDB.");
         }
@@ -959,13 +956,22 @@ jobs:
         mv wSH/*.js server/
         mv wSH/*.bin server/
         mv wSH/*-virt server/
-        mv wSH/alpine.img.part.* server/
         mv wSH/xterm.css server/
         mv wSH/v86.wasm server/
 
     - name: Update Icon Data
       run: |
         python -c "import base64,re; d=base64.b64encode(open('assets/appicon.png','rb').read()).decode(); f='unsigned.mobileconfig'; s=open(f,'r',encoding='utf-8').read(); s=re.sub(r'      <data>.*</data>', f'      <data>{d}</data>', s); open(f,'w',encoding='utf-8').write(s)"
+
+    - name: Upload disk image parts to GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: latest
+        name: Latest wSH disk image
+        files: |
+          wSH/alpine.img.part.*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     # 4. Commit and overwrite the root file
     - name: Commit
