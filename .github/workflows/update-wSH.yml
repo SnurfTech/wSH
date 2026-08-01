@@ -109,43 +109,43 @@ jobs:
         zcat ../initramfs-virt | sudo cpio -idmv
         rm ../initramfs-virt
         #building new kernel
-        #cd ..
-        #mkdir linux
-        #cd linux
+        cd ..
+        mkdir linux
+        cd linux
 
-        #curl -s "https://api.github.com/repos/alpinelinux/aports/contents/main/linux-lts" | jq -r '.[] | .download_url' | xargs -n1 wget
+        curl -s "https://api.github.com/repos/alpinelinux/aports/contents/main/linux-lts" | jq -r '.[] | .download_url' | xargs -n1 wget
 
-        #export PKGVER="$(cat APKBUILD | grep -oP "pkgver=.*" | cut -d '=' -f2)"
-        #export KERNVER=${PKGVER%.*}
-        #export LINUXSRC="https://cdn.kernel.org/pub/linux/kernel/v${PKGVER%%.*}.x/linux-$KERNVER.tar.xz"
-        #export LINUXPATCH="https://cdn.kernel.org/pub/linux/kernel/v${PKGVER%%.*}.x/patch-$PKGVER.xz"
-        #wget $LINUXSRC
-        #wget $LINUXPATCH
-        #tar -xvf linux-$KERNVER.tar.xz
-        #cd linux-$KERNVER
-        #xzcat ../patch-$PKGVER.xz | patch -p1
-        #for patch in ../*.patch; do
-        #  patch -p1 < $patch
-        #done
-        #cp ../virt.x86.config .config
-        #scripts/config --enable MODULES
-        #scripts/config --enable PCI
-        #scripts/config --enable NET
-        #scripts/config --enable NETDEVICES
-        #scripts/config --enable ETHERNET
-        #scripts/config --module LIB8390
-        #scripts/config --module NE2K_PCI
-        #make olddefconfig
-        #make -j$(nproc) bzImage modules
+        export PKGVER="$(cat APKBUILD | grep -oP "pkgver=.*" | cut -d '=' -f2)"
+        export KERNVER=${PKGVER%.*}
+        export LINUXSRC="https://cdn.kernel.org/pub/linux/kernel/v${PKGVER%%.*}.x/linux-$KERNVER.tar.xz"
+        export LINUXPATCH="https://cdn.kernel.org/pub/linux/kernel/v${PKGVER%%.*}.x/patch-$PKGVER.xz"
+        wget $LINUXSRC
+        wget $LINUXPATCH
+        tar -xvf linux-$KERNVER.tar.xz
+        cd linux-$KERNVER
+        xzcat ../patch-$PKGVER.xz | patch -p1
+        for patch in ../*.patch; do
+          patch -p1 < $patch
+        done
+        cp ../virt.x86.config .config
+        scripts/config --enable MODULES
+        scripts/config --enable PCI
+        scripts/config --enable NET
+        scripts/config --enable NETDEVICES
+        scripts/config --enable ETHERNET
+        scripts/config --module LIB8390
+        scripts/config --module NE2K_PCI
+        make olddefconfig
+        make -j$(nproc) bzImage modules
 
-        #sudo rm -rf ../../initramfs/usr/lib/modules/*
-        #sudo make modules_install INSTALL_MOD_PATH=../../initramfs/usr
+        sudo rm -rf ../../initramfs/usr/lib/modules/*
+        sudo make modules_install INSTALL_MOD_PATH=../../initramfs/usr
 
-        #sudo depmod -a -b ../../initramfs/usr $PKGVER
+        sudo depmod -a -b ../../initramfs/usr $PKGVER
 
-        #sudo cp arch/x86/boot/bzImage ../../vmlinuz-virt
+        sudo cp arch/x86/boot/bzImage ../../vmlinuz-virt
 
-        #cd ../../initramfs
+        cd ../../initramfs
 
         cat << EOF | sudo tee init
         #!/bin/sh
@@ -597,7 +597,7 @@ jobs:
         term.open(terminalEl);
 
         const emulator = new V86({
-            wasm_path: "v86.wasm",
+            wasm_path: "https://github.com/SnurfTech/wSH/releases/download/latest/v86.wasm",
 
             memory_size: 128 * 1024 * 1024,
             vga_memory_size: 8 * 1024 * 1024,
@@ -605,19 +605,19 @@ jobs:
             screen_container: document.getElementById("screen_container"),
 
             bios: {
-                url: "seabios.bin"
+                url: "https://github.com/SnurfTech/wSH/releases/download/latest/seabios.bin"
             },
 
             vga_bios: {
-                url: "vgabios.bin"
+                url: "https://github.com/SnurfTech/wSH/releases/download/latest/vgabios.bin"
             },
 
             bzimage: {
-                url: "vmlinuz-virt"
+                url: "https://github.com/SnurfTech/wSH/releases/download/latest/vmlinuz-virt"
             },
 
             initrd: {
-                url: "initramfs-virt"
+                url: "https://github.com/SnurfTech/wSH/releases/download/latest/initramfs-virt"
             },
 
             hda: {
@@ -899,13 +899,13 @@ jobs:
             "./index.html",
 
             "./libv86.js",
-            "./v86.wasm",
+            "https://github.com/SnurfTech/wSH/releases/download/latest/v86.wasm",
 
-            "./seabios.bin",
-            "./vgabios.bin",
+            "https://github.com/SnurfTech/wSH/releases/download/latest/seabios.bin",
+            "https://github.com/SnurfTech/wSH/releases/download/latest/vgabios.bin",
 
-            "./vmlinuz-virt",
-            "./initramfs-virt",
+            "https://github.com/SnurfTech/wSH/releases/download/latest/vmlinuz-virt",
+            "https://github.com/SnurfTech/wSH/releases/download/latest/initramfs-virt",
 
             "./xterm.js",
             "./xterm.css",
@@ -932,20 +932,6 @@ jobs:
         });
         EOF
 
-    - name: Bundle & Patch bundled.html
-      run: |
-        #cd wSH
-        #perl -MMIME::Base64 -i -pe 'BEGIN { $file = "libv86.js"; $mime = "text/javascript"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
-        #perl -MMIME::Base64 -i -pe 'BEGIN { $file = "v86.wasm"; $mime = "application/wasm"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
-        #perl -MMIME::Base64 -i -pe 'BEGIN { $file = "seabios.bin"; $mime = "application/octet-stream"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
-        #perl -MMIME::Base64 -i -pe 'BEGIN { $file = "vgabios.bin"; $mime = "application/octet-stream"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
-        #perl -MMIME::Base64 -i -pe 'BEGIN { $file = "xterm.js"; $mime = "text/javascript"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
-        #perl -MMIME::Base64 -i -pe 'BEGIN { $file = "xterm.css"; $mime = "text/css"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
-        #perl -MMIME::Base64 -i -pe 'BEGIN { $file = "xterm-addon-fit.js"; $mime = "text/javascript"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
-        #perl -MMIME::Base64 -i -pe 'BEGIN { $file = "alpine.img"; $mime = "application/octet-stream"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
-        #perl -MMIME::Base64 -i -pe 'BEGIN { $file = "vmlinuz-virt"; $mime = "application/octet-stream"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
-        #perl -MMIME::Base64 -i -pe 'BEGIN { $file = "initramfs-virt"; $mime = "application/octet-stream"; open my $fh, "<:raw", $file or die "Missing $file: $!"; local $/; $b64 = encode_base64(<$fh>, ""); $uri = "data:$mime;base64,$b64"; } s/\b\Q$file\E\b/$uri/g' bundled.html
-
     - name: Replace Old index.html File
       run: |
         #[[ -f server/index.html ]] && rm server/index.html
@@ -954,10 +940,7 @@ jobs:
         mkdir server
         mv wSH/index.html server/
         mv wSH/*.js server/
-        mv wSH/*.bin server/
-        mv wSH/*-virt server/
         mv wSH/xterm.css server/
-        mv wSH/v86.wasm server/
 
     - name: Update Icon Data
       run: |
@@ -967,9 +950,14 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         tag_name: latest
-        name: Latest wSH disk image
+        name: Latest wSH binaries
         files: |
           wSH/alpine.img.part.*
+          wSH/vmlinuz-virt
+          wSH/initramfs-virt
+          wSH/v86.wasm
+          wSH/seabios.bin
+          wSH/vgabios.bin
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
