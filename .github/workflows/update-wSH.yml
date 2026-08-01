@@ -977,4 +977,8 @@ jobs:
         git add server
         git commit -m "Automated update: Updated unsigned Mobileconfig and wSH HTML" || echo "No changes to commit"
         git pull --rebase origin main
-        git push origin main
+        for i in 1 2 3; do
+          git push origin main && break
+          echo "Push failed, retrying..."
+          sleep 5
+        done
