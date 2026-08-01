@@ -143,7 +143,7 @@ jobs:
         sudo rm -rf ../../initramfs/usr/lib/modules/*
         sudo make modules_install INSTALL_MOD_PATH=../../initramfs/usr
 
-        sudo depmod -a -b ../../initramfs $PKGVER-0-virt
+        sudo depmod -a -b ../../initramfs/usr $PKGVER-0-virt
 
         sudo cp arch/x86/boot/bzImage ../../vmlinuz-virt
 
