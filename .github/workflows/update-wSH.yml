@@ -979,4 +979,5 @@ jobs:
         #git add server/index.html
         git add server
         git commit -m "Automated update: Updated unsigned Mobileconfig and wSH HTML" || echo "No changes to commit"
-        git push
+        git pull --rebase origin main
+        git push origin main
