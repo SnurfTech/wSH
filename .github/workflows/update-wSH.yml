@@ -103,7 +103,7 @@ jobs:
         sudo cp -a rootfs/. /tmp/hda-mount/
         sudo umount /tmp/hda-mount
         rmdir /tmp/hda-mount
-        split -b 2G alpine.img alpine.img.part.
+        split -b 2g alpine.img alpine.img.part.
         mkdir initramfs
         cd initramfs
         zcat ../initramfs-virt | sudo cpio -idmv
