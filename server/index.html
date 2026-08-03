@@ -292,7 +292,7 @@ async function loadSplitDisk(prefix, parts) {
     return await new Blob(blobs).arrayBuffer();
 }
 
-const count = 3; // number of parts
+const count = 103; // number of parts
 
 const parts = Array.from(
     { length: count },
@@ -307,7 +307,7 @@ let disk = await loadSavedDisk();
 
 if (!disk) {
     console.log("Loading base disk...");
-    disk = await loadSplitDisk("https://github.com/SnurfTech/wSH/releases/download/latest/alpine.img.part.", parts);
+    disk = await loadSplitDisk("alpine.img.part.", parts);
 } else {
     console.log("Loaded disk from IndexedDB.");
 }
@@ -332,7 +332,7 @@ const modifierBar = document.getElementById("modifier-bar");
 term.open(terminalEl);
 
 const emulator = new V86({
-    wasm_path: "https://github.com/SnurfTech/wSH/releases/download/latest/v86.wasm",
+    wasm_path: "v86.wasm",
 
     memory_size: 128 * 1024 * 1024,
     vga_memory_size: 8 * 1024 * 1024,
@@ -340,19 +340,19 @@ const emulator = new V86({
     screen_container: document.getElementById("screen_container"),
 
     bios: {
-        url: "https://github.com/SnurfTech/wSH/releases/download/latest/seabios.bin"
+        url: "seabios.bin"
     },
 
     vga_bios: {
-        url: "https://github.com/SnurfTech/wSH/releases/download/latest/vgabios.bin"
+        url: "vgabios.bin"
     },
 
     bzimage: {
-        url: "https://github.com/SnurfTech/wSH/releases/download/latest/vmlinuz-virt"
+        url: "vmlinuz-virt"
     },
 
     initrd: {
-        url: "https://github.com/SnurfTech/wSH/releases/download/latest/initramfs-virt"
+        url: "initramfs-virt"
     },
 
     hda: {
