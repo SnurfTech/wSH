@@ -955,9 +955,19 @@ jobs:
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        git stash
-        git pull --rebase origin main
-        git stash pop
-        git add server unsigned.mobileconfig
-        git commit -m "Automated update: Updated unsigned Mobileconfig and wSH HTML" || echo "No changes to commit"
-        git push origin main
+
+        for file in server/* unsigned.mobileconfig; do
+            [[ -e "$file" ]] || continue
+
+            if [[ -n $(git status --porcelain -- "$file") ]]; then
+                git stash --include-untracked
+                git pull --rebase origin main
+                git stash pop || true
+
+                git add "$file"
+
+                if git commit -m "Automated update: $(basename "$file")"; then
+                    git push origin main
+                fi
+            fi
+        done
