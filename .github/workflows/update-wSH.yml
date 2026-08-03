@@ -960,7 +960,7 @@ jobs:
             [[ -e "$file" ]] || continue
 
             if [[ -n $(git status --porcelain -- "$file") ]]; then
-                git stash --include-untracked
+                git stash push --include-untracked -- server unsigned.mobileconfig
                 git pull --rebase origin main
                 git stash pop || true
 
