@@ -1027,12 +1027,22 @@ jobs:
         });
         EOF
 
-    - name: Replace Old index.html File
+    - name: Replace Old index.html File & Do Some Git Stuff
       run: |
-        #[[ -f server/index.html ]] && rm server/index.html
-        #mv wSH/bundled.html server/index.html
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git stash push --include-untracked -- server
+        git pull --rebase origin main
+        git stash pop || true
+        git rm -r server
         rm -r server
         mkdir server
+        git commit -m "Automated update: Erase contents of server"
+        git push origin main || {
+            git pull --rebase origin main
+            git push origin main
+        }
+        
         mv wSH/index.html server/
         mv wSH/*.js server/
         mv wSH/xterm.css server/
@@ -1048,8 +1058,8 @@ jobs:
     # 4. Commit and overwrite the root file
     - name: Commit
       run: |
-        git config --global user.name "github-actions[bot]"
-        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        #git config --global user.name "github-actions[bot]"
+        #git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
         git stash push --include-untracked  -- server unsigned.mobileconfig
         git pull --rebase origin main
