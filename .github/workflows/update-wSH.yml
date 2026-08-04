@@ -103,7 +103,7 @@ jobs:
         sudo cp -a rootfs/. /tmp/hda-mount/
         sudo umount /tmp/hda-mount
         rmdir /tmp/hda-mount
-        split -b 50M alpine.img alpine.img.part.
+        split -b 100M alpine.img alpine.img.part.
         mkdir initramfs
         cd initramfs
         zcat ../initramfs-virt | sudo cpio -idmv
@@ -128,6 +128,105 @@ jobs:
           patch -p1 < $patch
         done
         cp ../virt.x86.config .config
+
+        scripts/config --disable IPV6
+        scripts/config --disable NETFILTER
+        scripts/config --disable BRIDGE
+        scripts/config --disable VLAN_8021Q
+        scripts/config --disable WIREGUARD
+        scripts/config --disable WIRELESS
+        scripts/config --disable WLAN
+        scripts/config --disable RFKILL
+        scripts/config --disable BT
+        scripts/config --disable CAN
+        scripts/config --disable NFC
+        scripts/config --disable WWAN
+        scripts/config --disable HAMRADIO
+        scripts/config --disable AX25
+        scripts/config --disable IP_DCCP
+        scripts/config --disable IP_SCTP
+        scripts/config --disable RDS
+        scripts/config --disable TIPC
+        scripts/config --disable ATM
+        scripts/config --disable L2TP
+        scripts/config --disable DECNET
+        scripts/config --disable IPX
+        scripts/config --disable APPLETALK
+        scripts/config --disable X25
+        scripts/config --disable LAPB
+        scripts/config --disable PHONET
+        scripts/config --disable IEEE802154
+        scripts/config --disable SCSI
+        scripts/config --disable BLK_DEV_SD
+        scripts/config --disable CHR_DEV_SG
+        scripts/config --disable BLK_DEV_SR
+        scripts/config --disable NVME_CORE
+        scripts/config --disable ATA_ACPI
+        scripts/config --disable DRM
+        scripts/config --disable FB
+        scripts/config --disable FRAMEBUFFER_CONSOLE
+        scripts/config --disable VGA_CONSOLE
+        scripts/config --disable LOGO
+        scripts/config --disable BACKLIGHT_CLASS_DEVICE
+        scripts/config --disable SOUND
+        scripts/config --disable SND
+        scripts/config --disable SND_HDA_INTEL
+        scripts/config --disable HID
+        scripts/config --disable HID_SUPPORT
+        scripts/config --disable INPUT_MOUSE
+        scripts/config --disable INPUT_TABLET
+        scripts/config --disable INPUT_TOUCHSCREEN
+        scripts/config --disable INPUT_JOYSTICK
+        scripts/config --disable INPUT_MISC
+        scripts/config --disable USB_SUPPORT
+        scripts/config --disable USB
+        scripts/config --disable USB_COMMON
+        scripts/config --disable USB_HID
+        scripts/config --disable USB_STORAGE
+        scripts/config --disable USB_SERIAL
+        scripts/config --disable FIREWIRE
+        scripts/config --disable THUNDERBOLT
+        scripts/config --disable I2C
+        scripts/config --disable SPI
+        scripts/config --disable GPIO
+        scripts/config --disable LEDS_CLASS
+        scripts/config --disable HWMON
+        scripts/config --disable WATCHDOG
+        scripts/config --disable TPM
+        scripts/config --disable PTP_1588_CLOCK
+        scripts/config --disable PPS
+        scripts/config --disable VIRTUALIZATION
+        scripts/config --disable KVM
+        scripts/config --disable VHOST_MENU
+        scripts/config --disable VSOCKETS
+        scripts/config --disable HYPERV
+        scripts/config --disable XEN
+        scripts/config --disable PARAVIRT
+        scripts/config --disable VIRTIO_MENU
+        scripts/config --disable BTRFS_FS
+        scripts/config --disable XFS_FS
+        scripts/config --disable F2FS_FS
+        scripts/config --disable NILFS2_FS
+        scripts/config --disable JFS_FS
+        scripts/config --disable GFS2_FS
+        scripts/config --disable OCFS2_FS
+        scripts/config --disable REISERFS_FS
+        scripts/config --disable UDF_FS
+        scripts/config --disable NFS_FS
+        scripts/config --disable CIFS
+        scripts/config --disable CEPH_FS
+        scripts/config --disable 9P_FS
+        scripts/config --disable AFS_FS
+        scripts/config --disable CODA_FS
+        scripts/config --disable DEBUG_KERNEL
+        scripts/config --disable DEBUG_INFO
+        scripts/config --disable KASAN
+        scripts/config --disable KCSAN
+        scripts/config --disable UBSAN
+        scripts/config --disable KCOV
+        scripts/config --disable LOCKDEP
+        scripts/config --disable FTRACE
+
         scripts/config --enable MODULES
         scripts/config --enable PCI
         scripts/config --enable NET
@@ -557,7 +656,7 @@ jobs:
             return await new Blob(blobs).arrayBuffer();
         }
 
-        const count = 103; // number of parts
+        const count = 52; // number of parts
 
         const parts = Array.from(
             { length: count },
@@ -956,18 +1055,26 @@ jobs:
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-        for file in server/* unsigned.mobileconfig; do
-            [[ -e "$file" ]] || continue
+        git stash --include-untracked
+        git pull --rebase origin main
+        git stash pop || true
 
-            if [[ -n $(git status --porcelain -- "$file") ]]; then
-                git stash push --include-untracked -- server unsigned.mobileconfig
-                git pull --rebase origin main
-                git stash pop || true
+        # Commit unsigned.mobileconfig if it changed
+        if ! git diff --quiet -- unsigned.mobileconfig || ! git diff --cached --quiet -- unsigned.mobileconfig; then
+            git add unsigned.mobileconfig
+            git commit -m "Automated update: unsigned.mobileconfig" || true
+            git pull --rebase origin main || true
+            git push origin main
+        fi
 
+        # Commit each file in server/ individually
+        for file in server/*; do
+            [ -f "$file" ] || continue
+
+            if ! git diff --quiet -- "$file" || ! git diff --cached --quiet -- "$file"; then
                 git add "$file"
-
-                if git commit -m "Automated update: $(basename "$file")"; then
-                    git push origin main
-                fi
+                git commit -m "Automated update: $(basename "$file")" || true
+                git pull --rebase origin main || true
+                git push origin main
             fi
         done
