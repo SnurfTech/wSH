@@ -5,13 +5,13 @@ const FILES = [
     "./index.html",
 
     "./libv86.js",
-    "https://github.com/SnurfTech/wSH/releases/download/latest/v86.wasm",
+    "./v86.wasm",
 
-    "https://github.com/SnurfTech/wSH/releases/download/latest/seabios.bin",
-    "https://github.com/SnurfTech/wSH/releases/download/latest/vgabios.bin",
+    "./seabios.bin",
+    "./vgabios.bin",
 
-    "https://github.com/SnurfTech/wSH/releases/download/latest/vmlinuz-virt",
-    "https://github.com/SnurfTech/wSH/releases/download/latest/initramfs-virt",
+    "./vmlinuz-virt",
+    "./initramfs-virt",
 
     "./xterm.js",
     "./xterm.css",
