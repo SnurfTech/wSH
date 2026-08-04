@@ -1055,7 +1055,7 @@ jobs:
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-        git stash --include-untracked
+        git stash push --include-untracked  -- server unsigned.mobileconfig
         git pull --rebase origin main
         git stash pop || true
 
