@@ -103,7 +103,7 @@ jobs:
         sudo cp -a rootfs/. /tmp/hda-mount/
         sudo umount /tmp/hda-mount
         rmdir /tmp/hda-mount
-        split -b 100M alpine.img alpine.img.part.
+        split -b 100M --numeric-suffixes=0 --suffix-length=3 alpine.img alpine.img.part.
         mkdir initramfs
         cd initramfs
         zcat ../initramfs-virt | sudo cpio -idmv
@@ -570,7 +570,7 @@ jobs:
             return await new Blob(parts).arrayBuffer();
         }
 
-        const CHUNK_SIZE = 50 * 1024 * 1024;
+        const CHUNK_SIZE = 100 * 1024 * 1024;
 
         async function saveDisk() {
             const src = emulator.v86.cpu.devices.ide.primary.master.buffer.buffer;
@@ -660,11 +660,7 @@ jobs:
 
         const parts = Array.from(
             { length: count },
-            (_, i) => {
-                const first = String.fromCharCode(97 + Math.floor(i / 26));
-                const second = String.fromCharCode(97 + (i % 26));
-                return `${first}${second}`;
-            }
+            (_, i) => i.toString().padStart(3, "0")
         );
 
         let disk = await loadSavedDisk();
