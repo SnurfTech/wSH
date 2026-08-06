@@ -357,6 +357,7 @@ jobs:
         ne2k-pci
         EOF
         find . -print0 | sudo cpio --null -ov --format=newc > ../initramfs-virt
+        cd ..
         split -b 100M --numeric-suffixes=0 --suffix-length=3 initramfs-virt initramfs-virt.part.
 
     - name: Create bundled.html
