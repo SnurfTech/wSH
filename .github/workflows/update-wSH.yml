@@ -1071,10 +1071,26 @@ jobs:
     - name: Commit
       run: |
         # Commit each file in server/ individually
+        batch=0
+
         for file in server/* unsigned.mobileconfig; do
             [ -f "$file" ] || continue
 
             git add "$file"
+            batch=$((batch + 1))
+            if [ "$batch" -ge 5 ]; then
+                if git commit -m "Automated update: $(basename "$file")"; then
+                    git push origin main || {
+                        git stash push --include-untracked -- server unsigned.mobileconfig || true
+                        git pull --rebase origin main
+                        git stash pop || true
+                        git push origin main
+                    }
+                fi
+            fi
+        done
+
+        if [ "$batch" -gt 0 ]; then
             if git commit -m "Automated update: $(basename "$file")"; then
                 git push origin main || {
                     git stash push --include-untracked -- server unsigned.mobileconfig || true
@@ -1083,4 +1099,4 @@ jobs:
                     git push origin main
                 }
             fi
-        done
+        fi
