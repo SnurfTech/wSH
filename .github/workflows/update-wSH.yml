@@ -718,6 +718,8 @@ jobs:
             console.log("Loaded disk from IndexedDB.");
         }
 
+        window.disk = disk;
+
         const initramfsCount = INITRD_PARTS_AMOUNT; // change as needed
 
         const initramfsParts = Array.from(
@@ -729,9 +731,6 @@ jobs:
             "initramfs-virt.part.",
             initramfsParts
         );
-
-        window.loadSavedDisk = loadSavedDisk;
-        window.openDB = openDB;
         
         const term = new Terminal({
             cursorBlink: true,
