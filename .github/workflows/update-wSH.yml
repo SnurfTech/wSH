@@ -673,41 +673,33 @@ jobs:
             await waitForSaveSync();
         }
         
-        async function loadSplitDisk(prefix, parts) {
-            const blobs = [];
+        async function loadSavedDisk() {
+            const db = await openDB();
 
-            for (const suffix of parts) {
-                let response;
+            const tx = db.transaction("data");
+            const store = tx.objectStore("data");
 
-                for (let attempt = 1; attempt <= 3; attempt++) {
-                    try {
-                        console.log(`Fetching ${suffix} (attempt ${attempt}/3)`);
+            const count = await new Promise((resolve, reject) => {
+                const r = store.get("disk-count");
+                r.onsuccess = () => resolve(r.result ?? null);
+                r.onerror = () => reject(r.error);
+            });
 
-                        response = await fetch(prefix + suffix, {
-                            cache: "no-cache"
-                        });
+            if (count === null) return null;
 
-                        if (!response.ok) {
-                            throw new Error(`HTTP ${response.status}`);
-                        }
+            const parts = [];
 
-                        break; // Success
-                    } catch (err) {
-                        console.warn(`Failed ${suffix} (attempt ${attempt}/3):`, err);
+            for (let i = 0; i < count; i++) {
+                const chunk = await new Promise((resolve, reject) => {
+                    const r = store.get("disk-" + i);
+                    r.onsuccess = () => resolve(r.result);
+                    r.onerror = () => reject(r.error);
+                });
 
-                        if (attempt === 3) {
-                            throw new Error(`Failed to fetch ${prefix + suffix} after 3 attempts`);
-                        }
-
-                        // Wait 1 second before retrying
-                        await new Promise(resolve => setTimeout(resolve, 1000));
-                    }
-                }
-
-                blobs.push(await response.blob());
+                parts.push(chunk);
             }
 
-            return await new Blob(blobs).arrayBuffer();
+            return await new Blob(parts).arrayBuffer();
         }
 
         const count = DISK_PARTS_AMOUNT; // number of parts
