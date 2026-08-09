@@ -96,6 +96,7 @@ jobs:
         iface eth0 inet dhcp
         EOF
         sudo ln -s /etc/init.d/networking rootfs/etc/runlevels/default/networking
+        sudo sed -i 's/mdevd-coldplug -O4/mdevd-coldplug/' rootfs/etc/init.d/mdevd-init
         sudo dd if=/dev/zero of=alpine.img bs=1M count=1024
         sudo mkfs.ext4 alpine.img
         mkdir /tmp/hda-mount
@@ -143,6 +144,7 @@ jobs:
             NET INET NETDEVICES ETHERNET \
             TTY SERIAL_8250 SERIAL_8250_CONSOLE \
             PROC_FS SYSFS DEVTMPFS DEVTMPFS_MOUNT TMPFS \
+            NET INET NETDEVICES ETHERNET NET_CORE PACKET LOOPBACK \
             CMDLINE \
             MODULES; do
             scripts/config --enable "$opt"
@@ -246,7 +248,7 @@ jobs:
         [ -n "$KOPT_nbd" ] && modprobe -q nbd max_part=8 2>/dev/null 
         [ -n "$KOPT_aoe" ] && modprobe aoe 2>/dev/null 
 
-        nlplug-findfs -p /bin/mdev /dev/sda
+        #nlplug-findfs -p /bin/mdev /dev/sda
 
         # 3. Create target directory and mount /dev/sda as read-write (rw)
         mkdir -p /newroot
@@ -265,7 +267,7 @@ jobs:
 
         # 5. Hand over control to the main OS init
         echo "Switching root to /dev/sda..."
-        #exec switch_root /newroot /sbin/init
+        exec switch_root /newroot /sbin/init
 
         # Emergency fallback
         echo "ERROR: Unable to execute init process in /dev/sda."
