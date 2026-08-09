@@ -156,8 +156,8 @@ jobs:
 
         echo "SEEING CONFIG STUFF"
         echo "------------------------------"
-        grep '=y' .config | wc -l
-        grep '=m' .config | wc -l
+        grep '=y' .config
+        grep '=m' .config
         make listnewconfig
         echo "------------------------------"
         
