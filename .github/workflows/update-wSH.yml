@@ -142,7 +142,7 @@ jobs:
             EXT4_FS JBD2 FS_MBCACHE \
             NET INET NETDEVICES ETHERNET \
             TTY SERIAL_8250 SERIAL_8250_CONSOLE \
-            PROC_FS SYSFS DEVTMPFS \
+            PROC_FS SYSFS DEVTMPFS DEVTMPFS_MOUNT TMPFS \
             CMDLINE \
             MODULES; do
             scripts/config --enable "$opt"
