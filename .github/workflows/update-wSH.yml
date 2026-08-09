@@ -132,7 +132,7 @@ jobs:
 
         for opt in \
             X86 X86_32 MMU \
-            BINFMT_ELF \
+            BINFMT_ELF BINFMT_SCRIPT \
             PRINTK BUG \
             BLK_DEV_INITRD \
             PCI \
