@@ -143,6 +143,7 @@ jobs:
             NET INET NETDEVICES ETHERNET \
             TTY SERIAL_8250 SERIAL_8250_CONSOLE \
             PROC_FS SYSFS DEVTMPFS DEVTMPFS_MOUNT TMPFS \
+            KOBJECT_UEVENT NETLINK \
             CMDLINE \
             MODULES; do
             scripts/config --enable "$opt"
