@@ -281,8 +281,6 @@ jobs:
         ne2k-pci
         EOF
         find . -print0 | sudo cpio --null -ov --format=newc > ../initramfs-virt
-        cd ..
-        split -b 100M --numeric-suffixes=0 --suffix-length=3 initramfs-virt initramfs-virt.part.
 
     - name: Create bundled.html
       run: |
@@ -643,18 +641,6 @@ jobs:
         }
 
         window.disk = disk;
-
-        const initramfsCount = INITRD_PARTS_AMOUNT; // change as needed
-
-        const initramfsParts = Array.from(
-            { length: initramfsCount },
-            (_, i) => i.toString().padStart(3, "0")
-        );
-
-        const initrd = await loadSplitDisk(
-            "initramfs-virt.part.",
-            initramfsParts
-        );
         
         const term = new Terminal({
             cursorBlink: true,
@@ -693,7 +679,7 @@ jobs:
             },
 
             initrd: {
-                buffer: initrd
+                url: "initramfs-virt"
             },
 
             hda: {
@@ -964,7 +950,6 @@ jobs:
         </html>
         EOF
         sed -i "s|DISK_PARTS_AMOUNT|$(ls alpine.img.part.* | wc -l)|" index.html
-        sed -i "s|INITRD_PARTS_AMOUNT|$(ls initramfs-virt.part.* | wc -l)|" index.html
 
     - name: Create Service Worker
       run: |
@@ -983,6 +968,7 @@ jobs:
             "./vgabios.bin",
 
             "./vmlinuz-virt",
+            "./initramfs-virt",
 
             "./xterm.js",
             "./xterm.css",
@@ -1029,8 +1015,7 @@ jobs:
         mv wSH/*.js server/
         mv wSH/xterm.css server/
         mv wSH/alpine.img.part.* server/
-        mv wSH/vmlinuz-virt server/
-        mv wSH/initramfs-virt.part.* server/
+        mv wSH/*-virt server/
         mv wSH/v86.wasm server/
         mv wSH/*.bin server/
 
