@@ -127,120 +127,46 @@ jobs:
         for patch in ../*.patch; do
           patch -p1 < $patch
         done
-        cp ../virt.x86.config .config
 
-        scripts/config --disable IPV6
-        scripts/config --disable NETFILTER
-        scripts/config --disable BRIDGE
-        scripts/config --disable VLAN_8021Q
-        scripts/config --disable WIREGUARD
-        scripts/config --disable WIRELESS
-        scripts/config --disable WLAN
-        scripts/config --disable RFKILL
-        scripts/config --disable BT
-        scripts/config --disable CAN
-        scripts/config --disable NFC
-        scripts/config --disable WWAN
-        scripts/config --disable HAMRADIO
-        scripts/config --disable AX25
-        scripts/config --disable IP_DCCP
-        scripts/config --disable IP_SCTP
-        scripts/config --disable RDS
-        scripts/config --disable TIPC
-        scripts/config --disable ATM
-        scripts/config --disable L2TP
-        scripts/config --disable DECNET
-        scripts/config --disable IPX
-        scripts/config --disable APPLETALK
-        scripts/config --disable X25
-        scripts/config --disable LAPB
-        scripts/config --disable PHONET
-        scripts/config --disable IEEE802154
-        scripts/config --disable SCSI
-        scripts/config --disable BLK_DEV_SD
-        scripts/config --disable CHR_DEV_SG
-        scripts/config --disable BLK_DEV_SR
-        scripts/config --disable NVME_CORE
-        scripts/config --disable ATA_ACPI
-        scripts/config --disable DRM
-        scripts/config --disable FB
-        scripts/config --disable FRAMEBUFFER_CONSOLE
-        scripts/config --disable VGA_CONSOLE
-        scripts/config --disable LOGO
-        scripts/config --disable BACKLIGHT_CLASS_DEVICE
-        scripts/config --disable SOUND
-        scripts/config --disable SND
-        scripts/config --disable SND_HDA_INTEL
-        scripts/config --disable HID
-        scripts/config --disable HID_SUPPORT
-        scripts/config --disable INPUT_MOUSE
-        scripts/config --disable INPUT_TABLET
-        scripts/config --disable INPUT_TOUCHSCREEN
-        scripts/config --disable INPUT_JOYSTICK
-        scripts/config --disable INPUT_MISC
-        scripts/config --disable USB_SUPPORT
-        scripts/config --disable USB
-        scripts/config --disable USB_COMMON
-        scripts/config --disable USB_HID
-        scripts/config --disable USB_STORAGE
-        scripts/config --disable USB_SERIAL
-        scripts/config --disable FIREWIRE
-        scripts/config --disable THUNDERBOLT
-        scripts/config --disable I2C
-        scripts/config --disable SPI
-        scripts/config --disable GPIO
-        scripts/config --disable LEDS_CLASS
-        scripts/config --disable HWMON
-        scripts/config --disable WATCHDOG
-        scripts/config --disable TPM
-        scripts/config --disable PTP_1588_CLOCK
-        scripts/config --disable PPS
-        scripts/config --disable VIRTUALIZATION
-        scripts/config --disable KVM
-        scripts/config --disable VHOST_MENU
-        scripts/config --disable VSOCKETS
-        scripts/config --disable HYPERV
-        scripts/config --disable XEN
-        scripts/config --disable PARAVIRT
-        scripts/config --disable VIRTIO_MENU
-        scripts/config --disable BTRFS_FS
-        scripts/config --disable XFS_FS
-        scripts/config --disable F2FS_FS
-        scripts/config --disable NILFS2_FS
-        scripts/config --disable JFS_FS
-        scripts/config --disable GFS2_FS
-        scripts/config --disable OCFS2_FS
-        scripts/config --disable REISERFS_FS
-        scripts/config --disable UDF_FS
-        scripts/config --disable NFS_FS
-        scripts/config --disable CIFS
-        scripts/config --disable CEPH_FS
-        scripts/config --disable 9P_FS
-        scripts/config --disable AFS_FS
-        scripts/config --disable CODA_FS
-        scripts/config --disable DEBUG_KERNEL
-        scripts/config --disable DEBUG_INFO
-        scripts/config --disable KASAN
-        scripts/config --disable KCSAN
-        scripts/config --disable UBSAN
-        scripts/config --disable KCOV
-        scripts/config --disable LOCKDEP
-        scripts/config --disable FTRACE
+        make allnoconfig
 
-        scripts/config --enable MODULES
-        scripts/config --enable PCI
-        scripts/config --enable NET
-        scripts/config --enable NETDEVICES
-        scripts/config --enable ETHERNET
-        scripts/config --module LIB8390
-        scripts/config --module NE2K_PCI
+        for opt in \
+            X86 X86_32 MMU \
+            BINFMT_ELF \
+            PRINTK BUG \
+            BLK_DEV_INITRD \
+            PCI \
+            BLOCK \
+            ATA ATA_PIIX \
+            EXT4_FS JBD2 FS_MBCACHE \
+            NET INET NETDEVICES ETHERNET \
+            TTY SERIAL_8250 SERIAL_8250_CONSOLE \
+            PROC_FS SYSFS DEVTMPFS \
+            CMDLINE \
+            MODULES; do
+            scripts/config --enable "$opt"
+        done
+        for opt in \
+            LIB8390 \
+            NE2K_PCI; do
+            scripts/config --module "$opt"
+        done
+
         make olddefconfig
+
+        echo "SEEING CONFIG STUFF"
+        echo "------------------------------"
+        grep '=y' .config | wc -l
+        grep '=m' .config | wc -l
+        make listnewconfig
+        echo "------------------------------"
+        
         make -j$(nproc) bzImage modules
 
         sudo rm -rf ../../initramfs/usr/lib/modules/*
         sudo make modules_install INSTALL_MOD_PATH=../../initramfs/usr
 
-        sudo depmod -a -b ../../initramfs/usr $PKGVER
+        sudo depmod -a -b ../../initramfs/usr "$(make -s kernelrelease)"
 
         sudo cp arch/x86/boot/bzImage ../../vmlinuz-virt
 
@@ -302,7 +228,7 @@ jobs:
         fi
 
         # Load standard storage, filesystem, and kernel-command-line modules 
-        modprobe -a $(echo "$KOPT_modules $KOPT_rootfstype" | tr ',' ' ') loop squashfs simpledrm 2>/dev/null 
+        modprobe -a $(echo "$KOPT_modules $KOPT_rootfstype" | tr ',' ' ') 2>/dev/null 
 
         # Read and load modules listed in /etc/modules
         if [ -f /etc/modules ]; then
