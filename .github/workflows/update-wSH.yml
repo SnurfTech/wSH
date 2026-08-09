@@ -143,7 +143,6 @@ jobs:
             NET INET NETDEVICES ETHERNET \
             TTY SERIAL_8250 SERIAL_8250_CONSOLE \
             PROC_FS SYSFS DEVTMPFS DEVTMPFS_MOUNT TMPFS \
-            KOBJECT_UEVENT NETLINK \
             CMDLINE \
             MODULES; do
             scripts/config --enable "$opt"
@@ -266,7 +265,7 @@ jobs:
 
         # 5. Hand over control to the main OS init
         echo "Switching root to /dev/sda..."
-        exec switch_root /newroot /sbin/init
+        #exec switch_root /newroot /sbin/init
 
         # Emergency fallback
         echo "ERROR: Unable to execute init process in /dev/sda."
