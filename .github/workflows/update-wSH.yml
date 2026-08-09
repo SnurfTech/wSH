@@ -156,9 +156,7 @@ jobs:
 
         echo "SEEING CONFIG STUFF"
         echo "------------------------------"
-        grep '=y' .config
-        grep '=m' .config
-        make listnewconfig
+        cat .config
         echo "------------------------------"
         
         make -j$(nproc) bzImage modules
