@@ -213,7 +213,7 @@ jobs:
 
         sudo make modules_install INSTALL_MOD_PATH=../initramfs
 
-        sudo depmod -a -b ../../initramfs "$(make -s kernelrelease)"
+        sudo depmod -a -b ../initramfs "$(make -s kernelrelease)"
 
         cp arch/x86/boot/bzImage ../vmlinuz-virt
 
