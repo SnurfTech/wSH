@@ -33,12 +33,7 @@ jobs:
         wget https://cdn.jsdelivr.net/npm/xterm-addon-fit@$XTERM_ADDON_FIT_VERSION/lib/xterm-addon-fit.js
         wget https://cdn.jsdelivr.net/npm/xterm@$XTERM_VERSION/lib/xterm.js
         wget https://cdn.jsdelivr.net/npm/xterm@$XTERM_VERSION/css/xterm.css
-        wget $ALPINEISO -O alpine.iso
         wget https://github.com/copy/v86/raw/refs/heads/master/bios/vgabios.bin
-        sudo apt install p7zip -y
-        7z x alpine.iso
-        #mv boot/vmlinuz-virt .
-        mv boot/initramfs-virt .
         git clone https://github.com/qemu/seabios
         cd seabios
         make defconfig
