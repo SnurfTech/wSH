@@ -218,6 +218,7 @@ jobs:
         cp arch/x86/boot/bzImage ../vmlinuz-virt
 
         cd ../initramfs
+        pwd
 
         find . -print0 | sudo cpio --null -ov --format=newc > ../initramfs-virt
 
