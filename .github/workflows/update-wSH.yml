@@ -231,28 +231,21 @@ jobs:
         # Load standard storage, filesystem, and kernel-command-line modules 
         modprobe -a $(echo "$KOPT_modules $KOPT_rootfstype" | tr ',' ' ') 2>/dev/null 
 
-        if [ -f /etc/modules ]; then
-            echo "=== /etc/modules found ==="
-            cat /etc/modules
-            echo "=== Loading /etc/modules ==="
+        echo "=== Loading /etc/modules ==="
 
-            while IFS= read -r line || [ -n "$line" ]; do
-                case "$line" in
-                    ""|\#*)
-                        continue
-                        ;;
+        if [ -f /etc/modules ]; then
+            for module in $(cat /etc/modules); do
+                case "$module" in
+                    \#*) continue ;;
                 esac
 
-                echo "Loading module: [$line]"
-                modprobe $line
+                echo "Loading module: [$module]"
+                modprobe "$module"
                 echo "modprobe exit: $?"
-            done < /etc/modules
-
-            echo "=== Finished /etc/modules ==="
-        else
-            echo "WARNING: /etc/modules does not exist!"
+            done
         fi
 
+        echo "=== Finished /etc/modules ==="
 
         # Load optional network and block device tunnel drivers
         [ -n "$KOPT_wireguard" ] && modprobe -q wireguard 2>/dev/null 
