@@ -211,9 +211,9 @@ jobs:
         
         make -j$(nproc) bzImage modules
 
-        sudo make modules_install INSTALL_MOD_PATH=../initramfs
+        make modules_install INSTALL_MOD_PATH=../initramfs
 
-        sudo depmod -a -b ../initramfs "$(make -s kernelrelease)"
+        depmod -a -b ../initramfs "$(make -s kernelrelease)"
 
         cp arch/x86/boot/bzImage ../vmlinuz-virt
 
