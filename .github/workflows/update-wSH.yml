@@ -176,8 +176,7 @@ jobs:
         cat << EOF | sudo tee init
         #!/bin/sh
 
-        /bin/busybox --install -s /vbin
-        export PATH="$PATH:/vbin"
+        /bin/busybox --install -s /bin
 
         # 1. Mount essential virtual filesystems
         mount -t proc proc /proc
@@ -233,6 +232,8 @@ jobs:
         modprobe -a $(echo "$KOPT_modules $KOPT_rootfstype" | tr ',' ' ') 2>/dev/null 
 
         echo "=== Loading /etc/modules ==="
+
+        cat /etc/modules
 
         if [ -f /etc/modules ]; then
             for module in $(cat /etc/modules)
