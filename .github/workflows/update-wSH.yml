@@ -141,7 +141,7 @@ jobs:
             ATA ATA_PIIX \
             SCSI BLK_DEV_SD \
             EXT4_FS JBD2 FS_MBCACHE \
-            NET INET NETDEVICES ETHERNET \
+            INET \
             TTY SERIAL_8250 SERIAL_8250_CONSOLE \
             PROC_FS SYSFS DEVTMPFS DEVTMPFS_MOUNT TMPFS \
             NET PACKET UNIX NETDEVICES NET_CORE LOOPBACK ETHERNET NET_VENDOR_8390 \
@@ -267,7 +267,7 @@ jobs:
 
         # 5. Hand over control to the main OS init
         echo "Switching root to /dev/sda..."
-        exec switch_root /newroot /sbin/init
+        #exec switch_root /newroot /sbin/init
 
         # Emergency fallback
         echo "ERROR: Unable to execute init process in /dev/sda."
