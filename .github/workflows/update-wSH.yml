@@ -211,15 +211,13 @@ jobs:
         
         make -j$(nproc) bzImage modules
 
-        make modules_install INSTALL_MOD_PATH=../initramfs
-        pwd
+        make modules_install INSTALL_MOD_PATH=../../initramfs
 
-        depmod -a -b ../initramfs "$(make -s kernelrelease)"
+        depmod -a -b ../../initramfs "$(make -s kernelrelease)"
 
-        cp arch/x86/boot/bzImage ../vmlinuz-virt
+        cp arch/x86/boot/bzImage ../../vmlinuz-virt
 
-        cd ../initramfs
-        pwd
+        cd ../../initramfs
 
         find . -print0 | sudo cpio --null -ov --format=newc > ../initramfs-virt
 
