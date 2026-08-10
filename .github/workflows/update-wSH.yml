@@ -234,11 +234,8 @@ jobs:
         echo "=== Loading /etc/modules ==="
 
         if [ -f /etc/modules ]; then
-            for module in $(cat /etc/modules); do
-                case "$module" in
-                    \#*) continue ;;
-                esac
-
+            for module in $(cat /etc/modules)
+            do
                 echo "Loading module: [$module]"
                 modprobe "$module"
                 echo "modprobe exit: $?"
