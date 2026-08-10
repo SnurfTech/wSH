@@ -236,7 +236,7 @@ jobs:
         cat /etc/modules
 
         if [ -f /etc/modules ]; then
-            for module in $(cat /etc/modules)
+            for module in hello testing
             do
                 echo "Loading module: [$module]"
                 modprobe "$module"
