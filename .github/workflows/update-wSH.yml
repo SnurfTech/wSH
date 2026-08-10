@@ -231,20 +231,14 @@ jobs:
         # Load standard storage, filesystem, and kernel-command-line modules 
         modprobe -a $(echo "$KOPT_modules $KOPT_rootfstype" | tr ',' ' ') 2>/dev/null 
 
-        # Read and load modules listed in /etc/modules
         if [ -f /etc/modules ]; then
-            # Read line by line; sh will put the first word in 'mod' and the rest in 'args'
-            while read -r mod args || [ -n "$mod" ]; do
-                case "$mod" in
+            while read -r line || [ -n "$line" ]; do
+                case "$line" in
                     ""|\#*) continue ;; # Skip empty lines and comments
                 esac
 
-                if [ -n "$args" ]; then
-                    # Using -q for quiet if arguments exist, per your original logic
-                    modprobe -q "$mod" $args
-                else
-                    modprobe "$mod"
-                fi
+                # Run modprobe with the full line (unquoted to allow arguments to separate)
+                modprobe $line
             done < /etc/modules
         fi
 
@@ -271,7 +265,7 @@ jobs:
 
         # 5. Hand over control to the main OS init
         echo "Switching root to /dev/sda..."
-        exec switch_root /newroot /sbin/init
+        #exec switch_root /newroot /sbin/init
 
         # Emergency fallback
         echo "ERROR: Unable to execute init process in /dev/sda."
