@@ -233,22 +233,26 @@ jobs:
 
         # Read and load modules listed in /etc/modules
         if [ -f /etc/modules ]; then
-            sed 's/\#.*//g' < /etc/modules | while read -r module args; do 
-                [ -n "$module" ] && modprobe -q $module $args
-            done
+            # Read line by line; sh will put the first word in 'mod' and the rest in 'args'
+            while read -r mod args || [ -n "$mod" ]; do
+                case "$mod" in
+                    ""|\#*) continue ;; # Skip empty lines and comments
+                esac
+
+                if [ -n "$args" ]; then
+                    # Using -q for quiet if arguments exist, per your original logic
+                    modprobe -q "$mod" $args
+                else
+                    modprobe "$mod"
+                fi
+            done < /etc/modules
         fi
 
-        # VMware storage & CD-ROM compatibility driver workaround 
-        if grep -q VMware /sys/devices/virtual/dmi/id/sys_vendor 2>/dev/null; then 
-            modprobe -a ata_piix mptspi sr-mod 2>/dev/null
-        fi
 
         # Load optional network and block device tunnel drivers
         [ -n "$KOPT_wireguard" ] && modprobe -q wireguard 2>/dev/null 
         [ -n "$KOPT_nbd" ] && modprobe -q nbd max_part=8 2>/dev/null 
         [ -n "$KOPT_aoe" ] && modprobe aoe 2>/dev/null 
-
-        #nlplug-findfs -p /bin/mdev /dev/sda
 
         # 3. Create target directory and mount /dev/sda as read-write (rw)
         mkdir -p /newroot
