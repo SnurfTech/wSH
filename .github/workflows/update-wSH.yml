@@ -232,14 +232,25 @@ jobs:
         modprobe -a $(echo "$KOPT_modules $KOPT_rootfstype" | tr ',' ' ') 2>/dev/null 
 
         if [ -f /etc/modules ]; then
-            while read -r line || [ -n "$line" ]; do
+            echo "=== /etc/modules found ==="
+            cat /etc/modules
+            echo "=== Loading /etc/modules ==="
+
+            while IFS= read -r line || [ -n "$line" ]; do
                 case "$line" in
-                    ""|\#*) continue ;; # Skip empty lines and comments
+                    ""|\#*)
+                        continue
+                        ;;
                 esac
 
-                # Run modprobe with the full line (unquoted to allow arguments to separate)
+                echo "Loading module: [$line]"
                 modprobe $line
+                echo "modprobe exit: $?"
             done < /etc/modules
+
+            echo "=== Finished /etc/modules ==="
+        else
+            echo "WARNING: /etc/modules does not exist!"
         fi
 
 
