@@ -173,7 +173,7 @@ jobs:
 
         cd ../../initramfs
 
-        cat << EOF | sudo tee init
+        cat << "EOF" | sudo tee init
         #!/bin/sh
 
         /bin/busybox --install -s /bin
@@ -233,15 +233,15 @@ jobs:
 
         echo "=== Loading /etc/modules ==="
 
-        cat /etc/modules
-
         if [ -f /etc/modules ]; then
-            for module in hello testing
-            do
-                echo "Loading module: [$module]"
-                modprobe "$module"
-                echo "modprobe exit: $?"
-            done
+            while read -r line || [ -n "$line" ]; do
+                case "$line" in
+                    ""|\#*) continue ;; # Skip empty lines and comments
+                esac
+
+                # Run modprobe with the full line (unquoted to allow arguments to separate)
+                modprobe $line
+            done < /etc/modules
         fi
 
         echo "=== Finished /etc/modules ==="
