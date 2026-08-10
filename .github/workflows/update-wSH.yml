@@ -271,7 +271,7 @@ jobs:
 
         # 5. Hand over control to the main OS init
         echo "Switching root to /dev/sda..."
-        #exec switch_root /newroot /sbin/init
+        exec switch_root /newroot /sbin/init
 
         # Emergency fallback
         echo "ERROR: Unable to execute init process in /dev/sda."
