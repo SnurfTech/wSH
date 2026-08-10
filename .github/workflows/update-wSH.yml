@@ -19,13 +19,12 @@ jobs:
 
     - name: Build Stuff
       run: |
-        #export APORTS_COMMIT="954487c7d11ef901fdf7350f9fa8638e7a45df4e"
         export XTERM_ADDON_FIT_VERSION="0.8.0"
         export XTERM_VERSION="5.3.0"
-        export ALPINEISO="https://dl-cdn.alpinelinux.org/alpine/v3.24/releases/x86/alpine-virt-3.24.1-x86.iso"
         export ALPINEROOTFS="https://dl-cdn.alpinelinux.org/alpine/v3.24/releases/x86/alpine-minirootfs-3.24.1-x86.tar.gz"
         export APKSTATIC="https://gitlab.alpinelinux.org/api/v4/projects/5/packages/generic/v2.14.6/x86_64/apk.static"
         export ALPINEREPO="https://dl-cdn.alpinelinux.org/alpine/v3.24/main"
+        export BUSYBOX="https://busybox.net/downloads/binaries/1.35.0-i686-linux-musl/busybox"
 
         mkdir wSH
         cd wSH
@@ -57,10 +56,6 @@ jobs:
         mv out/bios.bin ../seabios.bin
         cd ..
         mkdir rootfs
-        #cd rootfs
-        #zcat ../initramfs-virt | sudo cpio -idmv
-        #cd ..
-        #for i in apks/x86/*.apk; do sudo tar -p --same-owner -P --acls --xattrs -xvf $i -C rootfs; done
         wget $ALPINEROOTFS -O alpine.tar.gz
         sudo tar -p --same-owner -P --acls --xattrs -xzvf alpine.tar.gz -C rootfs
         cat << "EOF" | sudo tee rootfs/etc/fstab
@@ -105,14 +100,71 @@ jobs:
         sudo umount /tmp/hda-mount
         rmdir /tmp/hda-mount
         split -b 100M --numeric-suffixes=0 --suffix-length=3 alpine.img alpine.img.part.
-        mkdir initramfs
+
+        mkdir -p initramfs/{bin,dev,etc,proc,sys,newroot}
         cd initramfs
-        zcat ../initramfs-virt | sudo cpio -idmv
-        rm ../initramfs-virt
-        #building new kernel
+
+        wget $BUSYBOX -O bin/busybox
+        ln -s /bin/busybox bin/sh
+
+        cat << "EOF" > init
+        #!/bin/sh
+
+        export PATH="/bin"
+
+        /bin/busybox --install -s /bin
+
+        # 1. Mount essential virtual filesystems
+        mount -t proc proc /proc
+        mount -t sysfs sysfs /sys
+        mount -t devtmpfs devtmpfs /dev 2>/dev/null || mount -t tmpfs tmpfs /dev
+
+        echo "=== Initramfs Booting ==="
+
+        echo "=== Loading /etc/modules ==="
+
+        if [ -f /etc/modules ]; then
+            while read -r line || [ -n "$line" ]; do
+                case "$line" in
+                    ""|\#*) continue ;; # Skip empty lines and comments
+                esac
+
+                # Run modprobe with the full line (unquoted to allow arguments to separate)
+                modprobe $line
+            done < /etc/modules
+        fi
+
+        echo "=== Finished /etc/modules ==="
+
+        # 3. Mount /dev/sda as read-write (rw)
+
+        echo "Mounting /dev/sda..."
+        if ! mount -t ext4 -o rw /dev/sda /newroot; then
+            echo "ERROR: Failed to mount /dev/sda in read-write mode."
+            echo "Starting emergency shell..."
+            exec /bin/sh
+        fi
+
+        # 4. Move virtual filesystems to the new root target
+        mount -o move /proc /newroot/proc
+        mount -o move /sys /newroot/sys
+        mount -o move /dev /newroot/dev
+
+        # 5. Hand over control to the main OS init
+        echo "Switching root to /dev/sda..."
+        exec switch_root /newroot /sbin/init
+
+        # Emergency fallback
+        echo "ERROR: Unable to execute init process in /dev/sda."
+        exec /bin/sh
+        EOF
+        cat << EOF > etc/modules
+        ne2k-pci
+        EOF
         cd ..
-        mkdir linux
-        cd linux
+
+        mkdir kernel
+        cd kernel
 
         curl -s "https://api.github.com/repos/alpinelinux/aports/contents/main/linux-lts" | jq -r '.[] | .download_url' | xargs -n1 wget
 
@@ -164,120 +216,14 @@ jobs:
         
         make -j$(nproc) bzImage modules
 
-        sudo rm -rf ../../initramfs/usr/lib/modules/*
-        sudo make modules_install INSTALL_MOD_PATH=../../initramfs/usr
+        sudo make modules_install INSTALL_MOD_PATH=../initramfs
 
-        sudo depmod -a -b ../../initramfs/usr "$(make -s kernelrelease)"
+        sudo depmod -a -b ../../initramfs "$(make -s kernelrelease)"
 
-        sudo cp arch/x86/boot/bzImage ../../vmlinuz-virt
+        cp arch/x86/boot/bzImage ../vmlinuz-virt
 
-        cd ../../initramfs
+        cd ../initramfs
 
-        cat << "EOF" | sudo tee init
-        #!/bin/sh
-
-        /bin/busybox --install -s /bin
-
-        # 1. Mount essential virtual filesystems
-        mount -t proc proc /proc
-        mount -t sysfs sysfs /sys
-        mount -t devtmpfs devtmpfs /dev 2>/dev/null || mount -t tmpfs tmpfs /dev
-
-        # Set basic environment PATH
-        export PATH=/usr/bin:/bin:/usr/sbin:/sbin
-
-        echo "=== Initramfs Booting ==="
-
-        # 2. Parse kernel command line options
-        for opt in $(cat /proc/cmdline); do
-            case "$opt" in
-                modules=*) KOPT_modules="${opt#*=}" ;;
-                rootfstype=*) KOPT_rootfstype="${opt#*=}" ;;
-                zfcp=*) KOPT_zfcp="${opt#*=}" ;;
-                dasd=*) KOPT_dasd="${opt#*=}" ;;
-                s390x_net=*) KOPT_s390x_net="${opt#*=}" ;;
-                memdisk=*) KOPT_memdisk="${opt#*=}" ;;
-                wireguard=*) KOPT_wireguard="${opt#*=}" ;;
-                nbd=*) KOPT_nbd="${opt#*=}" ;;
-                aoe=*) KOPT_aoe="${opt#*=}" ;;
-            esac
-        done
-
-        echo "Loading modules..."
-
-        # Load memdisk drivers if requested
-        if [ "$KOPT_memdisk" = "yes" ]; then
-            modprobe phram phram=memdisk,$(memdiskfind) 2>/dev/null 
-            modprobe mtdblock 2>/dev/null 
-        fi
-
-        # Load S390x mainframe drivers if requested
-        if [ -n "$KOPT_zfcp" ]; then
-            modprobe zfcp 2>/dev/null 
-        fi
-
-        if [ -n "$KOPT_dasd" ]; then
-            for mod in dasd_mod dasd_eckd_mod dasd_fba_mod; do 
-                modprobe $mod 2>/dev/null
-            done
-        fi
-
-        if [ "${KOPT_s390x_net%%,*}" = "qeth_l2" ]; then
-            for mod in qeth qeth_l2 qeth_l3; do 
-                modprobe $mod 2>/dev/null
-            done
-        fi
-
-        # Load standard storage, filesystem, and kernel-command-line modules 
-        modprobe -a $(echo "$KOPT_modules $KOPT_rootfstype" | tr ',' ' ') 2>/dev/null 
-
-        echo "=== Loading /etc/modules ==="
-
-        if [ -f /etc/modules ]; then
-            while read -r line || [ -n "$line" ]; do
-                case "$line" in
-                    ""|\#*) continue ;; # Skip empty lines and comments
-                esac
-
-                # Run modprobe with the full line (unquoted to allow arguments to separate)
-                modprobe $line
-            done < /etc/modules
-        fi
-
-        echo "=== Finished /etc/modules ==="
-
-        # Load optional network and block device tunnel drivers
-        [ -n "$KOPT_wireguard" ] && modprobe -q wireguard 2>/dev/null 
-        [ -n "$KOPT_nbd" ] && modprobe -q nbd max_part=8 2>/dev/null 
-        [ -n "$KOPT_aoe" ] && modprobe aoe 2>/dev/null 
-
-        # 3. Create target directory and mount /dev/sda as read-write (rw)
-        mkdir -p /newroot
-
-        echo "Mounting /dev/sda..."
-        if ! mount -t ext4 -o rw /dev/sda /newroot; then
-            echo "ERROR: Failed to mount /dev/sda in read-write mode."
-            echo "Starting emergency shell..."
-            exec /bin/sh
-        fi
-
-        # 4. Move virtual filesystems to the new root target
-        mount -o move /proc /newroot/proc
-        mount -o move /sys /newroot/sys
-        mount -o move /dev /newroot/dev
-
-        # 5. Hand over control to the main OS init
-        echo "Switching root to /dev/sda..."
-        #exec switch_root /newroot /sbin/init
-
-        # Emergency fallback
-        echo "ERROR: Unable to execute init process in /dev/sda."
-        exec /bin/sh
-        EOF
-        cat << EOF | sudo tee -a etc/modules
-        8390
-        ne2k-pci
-        EOF
         find . -print0 | sudo cpio --null -ov --format=newc > ../initramfs-virt
 
     - name: Create bundled.html
