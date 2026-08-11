@@ -98,8 +98,6 @@ jobs:
 
         mkdir -p initramfs/{bin,dev,etc,proc,sys,newroot}
         cd initramfs
-        echo "------------------------------"
-        pwd
 
         wget $BUSYBOX -O bin/busybox
         ln -s /bin/busybox bin/sh
@@ -155,6 +153,7 @@ jobs:
         echo "ERROR: Unable to execute init process in /dev/sda."
         exec /bin/sh
         EOF
+        chmod +x init
         cat << EOF > etc/modules
         ne2k-pci
         EOF
@@ -220,8 +219,6 @@ jobs:
         cp arch/x86/boot/bzImage ../../vmlinuz-virt
 
         cd ../../initramfs
-        pwd
-        echo "------------------------------"
 
         find . -print0 | sudo cpio --null -ov --format=newc > ../initramfs-virt
 
