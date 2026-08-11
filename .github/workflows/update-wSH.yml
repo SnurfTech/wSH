@@ -98,6 +98,7 @@ jobs:
 
         mkdir -p initramfs/{bin,dev,etc,proc,sys,newroot}
         cd initramfs
+        echo "------------------------------"
         pwd
 
         wget $BUSYBOX -O bin/busybox
@@ -220,6 +221,7 @@ jobs:
 
         cd ../../initramfs
         pwd
+        echo "------------------------------"
 
         find . -print0 | sudo cpio --null -ov --format=newc > ../initramfs-virt
 
