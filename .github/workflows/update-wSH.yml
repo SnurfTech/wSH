@@ -101,14 +101,12 @@ jobs:
 
         wget $BUSYBOX -O bin/busybox
         chmod +x bin/busybox
-        ln -s /bin/busybox bin/sh
+        ./bin/busybox --install -s bin
 
         cat << "EOF" > init
-        #!/bin/sh
+        #!/bin/busybox sh
 
         export PATH="/bin"
-
-        /bin/busybox --install -s /bin
 
         # 1. Mount essential virtual filesystems
         mount -t proc proc /proc
