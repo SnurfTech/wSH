@@ -38,8 +38,8 @@ mastodon_link                             :
 # Feature List                            Edit, add or remove features to be presented.
 features                                  :
 
-  - title                                 : Full Alpine Linux
-    description                           : A full version of Alpine Linux right in an iOS app!
+  - title                                 : Real Alpine Linux
+    description                           : A real version of Alpine Linux right in an iOS app!
     fontawesome_icon_name                 : code
     
   - title                                 : Not on the App Store
@@ -61,6 +61,10 @@ features                                  :
   - title                                 : Completely Free
     description                           : Just like Alpine Linux, this app is completely free.
     fontawesome_icon_name                 : dollar-sign
+
+  - title                                 : Persistant Storage
+    description                           : 'All changes made in Linux will be saved as long as you press the "Save" button in the top left corner of your screen.'
+    fontawesome_icon_name                 : box-archive
 
 
 # Theme Settings
