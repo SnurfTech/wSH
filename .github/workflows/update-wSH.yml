@@ -359,10 +359,10 @@ jobs:
         top:0;
         right:0;
         bottom:0;
-        display:none;
+        display:flex;
         justify-content:center;
         align-items:center;
-        background:rgba(0,0,0,.45);
+        background:rgba(0,0,0,.85);
         backdrop-filter:blur(4px);
         z-index:100000;
         touch-action:none;
@@ -377,8 +377,16 @@ jobs:
         font-size:28px;
         color:white;
         font-family:sans-serif;
+        text-align:center;
         ">
-        Saving...
+        <div id="overlay-title">Loading...</div>
+        <div id="overlay-status" style="
+            margin-top:10px;
+            font-size:16px;
+            opacity:.7;
+        ">
+            Preparing...
+        </div>
         </div>
 
         </div>
@@ -564,6 +572,8 @@ jobs:
             return await new Blob(parts).arrayBuffer();
         }
 
+        showOverlay("Preparing Disk...");
+
         const count = DISK_PARTS_AMOUNT; // number of parts
 
         const parts = Array.from(
@@ -580,7 +590,7 @@ jobs:
             console.log("Loaded disk from IndexedDB.");
         }
 
-        window.disk = disk;
+        hideOverlay();
         
         const term = new Terminal({
             cursorBlink: true,
@@ -653,12 +663,21 @@ jobs:
 
         const saveOverlay = document.getElementById("save-overlay");
 
-        function showSaveOverlay() {
+        const overlayTitle = document.getElementById("overlay-title");
+        const overlayStatus = document.getElementById("overlay-status");
+
+        function showOverlay(title, status = "") {
+            overlayTitle.textContent = title;
+            overlayStatus.textContent = status;
             saveOverlay.style.display = "flex";
         }
 
-        function hideSaveOverlay() {
+        function hideOverlay() {
             saveOverlay.style.display = "none";
+        }
+
+        function setOverlayStatus(status) {
+            overlayStatus.textContent = status;
         }
 
         /* Main terminal output (ttyS0) */
@@ -707,15 +726,15 @@ jobs:
 
                             button.disabled = true;
 
-                            showSaveOverlay();
+                            showOverlay("Saving...", "Syncing filesystem...");
 
                             try {
-                                button.textContent = "Syncing...";
+                                setOverlayStatus("Syncing filesystem...");
 
                                 await flushFilesystem();
                                 await new Promise(r => setTimeout(r, 100));
 
-                                button.textContent = "Saving...";
+                                setOverlayStatus("Saving disk...");
 
                                 emulator.stop();
 
@@ -735,7 +754,7 @@ jobs:
                                 // ALSO MOVE THIS HERE
                                 saveInProgress = false;
 
-                                hideSaveOverlay();
+                                hideOverlay();
 
                                 setTimeout(() => {
                                     button.disabled = false;
