@@ -101,7 +101,7 @@ jobs:
 
         wget $BUSYBOX -O bin/busybox
         chmod +x bin/busybox
-        ./bin/busybox --install -s bin
+        ./bin/busybox --install bin
 
         cat << "EOF" > init
         #!/bin/busybox sh
