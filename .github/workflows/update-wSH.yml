@@ -192,6 +192,7 @@ jobs:
             TTY SERIAL_8250 SERIAL_8250_CONSOLE \
             PROC_FS SYSFS DEVTMPFS DEVTMPFS_MOUNT TMPFS \
             NET PACKET UNIX NETDEVICES NET_CORE LOOPBACK ETHERNET NET_VENDOR_8390 \
+            COMPAT_32BIT_TIME \
             CMDLINE \
             MODULES; do
             scripts/config --enable "$opt"
