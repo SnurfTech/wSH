@@ -98,6 +98,7 @@ jobs:
 
         mkdir -p initramfs/{bin,dev,etc,proc,sys,newroot}
         cd initramfs
+        pwd
 
         wget $BUSYBOX -O bin/busybox
         ln -s /bin/busybox bin/sh
@@ -218,6 +219,7 @@ jobs:
         cp arch/x86/boot/bzImage ../../vmlinuz-virt
 
         cd ../../initramfs
+        pwd
 
         find . -print0 | sudo cpio --null -ov --format=newc > ../initramfs-virt
 
