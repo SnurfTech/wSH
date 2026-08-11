@@ -572,6 +572,25 @@ jobs:
             return await new Blob(parts).arrayBuffer();
         }
 
+        const saveOverlay = document.getElementById("save-overlay");
+
+        const overlayTitle = document.getElementById("overlay-title");
+        const overlayStatus = document.getElementById("overlay-status");
+
+        function showOverlay(title, status = "") {
+            overlayTitle.textContent = title;
+            overlayStatus.textContent = status;
+            saveOverlay.style.display = "flex";
+        }
+
+        function hideOverlay() {
+            saveOverlay.style.display = "none";
+        }
+
+        function setOverlayStatus(status) {
+            overlayStatus.textContent = status;
+        }
+
         showOverlay("Preparing Disk...");
 
         const count = DISK_PARTS_AMOUNT; // number of parts
@@ -660,25 +679,6 @@ jobs:
                 bus.send("serial1-input", c.charCodeAt(0));
             }
         };
-
-        const saveOverlay = document.getElementById("save-overlay");
-
-        const overlayTitle = document.getElementById("overlay-title");
-        const overlayStatus = document.getElementById("overlay-status");
-
-        function showOverlay(title, status = "") {
-            overlayTitle.textContent = title;
-            overlayStatus.textContent = status;
-            saveOverlay.style.display = "flex";
-        }
-
-        function hideOverlay() {
-            saveOverlay.style.display = "none";
-        }
-
-        function setOverlayStatus(status) {
-            overlayStatus.textContent = status;
-        }
 
         /* Main terminal output (ttyS0) */
         emulator.add_listener("serial0-output-byte", function(b) {
