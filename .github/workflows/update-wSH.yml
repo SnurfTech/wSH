@@ -591,7 +591,7 @@ jobs:
             overlayStatus.textContent = status;
         }
 
-        showOverlay("Preparing Disk...");
+        showOverlay("Preparing Disk...", "Loading disk from IndexedDB...);
 
         const count = DISK_PARTS_AMOUNT; // number of parts
 
@@ -604,6 +604,7 @@ jobs:
 
         if (!disk) {
             console.log("Loading base disk...");
+            setOverlayStatus("Downloading and constructing disk...")
             disk = await loadSplitDisk("alpine.img.part.", parts);
         } else {
             console.log("Loaded disk from IndexedDB.");
